@@ -139,3 +139,11 @@ C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\obj\Debu
 C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\obj\Debug\net8.0\SuperMarketAPI.pdb
 C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\obj\Debug\net8.0\SuperMarketAPI.genruntimeconfig.cache
 C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\obj\Debug\net8.0\ref\SuperMarketAPI.dll
+C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\obj\Debug\net8.0\SuperMarketAPI.sourcelink.json
+C:\tmp\SuperMarketAPI-build\appsettings.Development.json
+C:\tmp\SuperMarketAPI-build\appsettings.json
+C:\tmp\SuperMarketAPI-build\SuperMarketAPI.exe
+C:\tmp\SuperMarketAPI-build\SuperMarketAPI.deps.json
+C:\tmp\SuperMarketAPI-build\SuperMarketAPI.runtimeconfig.json
+C:\tmp\SuperMarketAPI-build\SuperMarketAPI.dll
+C:\tmp\SuperMarketAPI-build\SuperMarketAPI.pdb

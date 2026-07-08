@@ -12,8 +12,7 @@ public class OtpService
 
     public string GenerateAndStore(string phone)
     {
-        // For demo, OTP is always "123456" — replace with Random.Shared.Next(100000,999999).ToString()
-        var otp = "123456";
+        var otp = Random.Shared.Next(0, 1_000_000).ToString("D6");
         lock (_lock)
         {
             _store[phone] = (otp, DateTime.UtcNow.AddMinutes(10));

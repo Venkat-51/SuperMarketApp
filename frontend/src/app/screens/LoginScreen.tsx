@@ -2,16 +2,55 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '../components/ui/input-otp';
 import { ArrowLeft } from 'lucide-react';
+import { authApi } from '../../lib/api';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
   const [mobileNumber, setMobileNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [error, setError] = useState('');
+  const [devOtp, setDevOtp] = useState('');
 
-  const handleGetOTP = () => {
-    if (mobileNumber.length === 10) {
-      // Simulate OTP sent - directly navigate to home
+  const handleGetOTP = async () => {
+    if (mobileNumber.length !== 10) return;
+
+    setError('');
+    setIsSendingOtp(true);
+    try {
+      const result = await authApi.sendOtp(mobileNumber);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      setIsOtpSent(true);
+      setOtp('');
+      setDevOtp(result.data?.otp ?? '');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (mobileNumber.length !== 10 || otp.length !== 6) return;
+
+    setError('');
+    setIsVerifyingOtp(true);
+    try {
+      const result = await authApi.verifyOtp(mobileNumber, otp);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
       navigate('/home');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -52,14 +91,64 @@ export default function LoginScreen() {
             </div>
           </div>
 
-          <Button
-            onClick={handleGetOTP}
-            disabled={mobileNumber.length !== 10}
-            className="w-full h-12 rounded-lg mt-6"
-            style={{ backgroundColor: '#FF9933' }}
-          >
-            Get OTP
-          </Button>
+          {!isOtpSent ? (
+            <Button
+              onClick={handleGetOTP}
+              disabled={mobileNumber.length !== 10 || isSendingOtp}
+              className="w-full h-12 rounded-lg mt-6"
+              style={{ backgroundColor: '#FF9933' }}
+            >
+              {isSendingOtp ? 'Sending OTP...' : 'Get OTP'}
+            </Button>
+          ) : (
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="block text-sm font-medium mb-2">Enter OTP</label>
+                <InputOTP
+                  value={otp}
+                  onChange={setOtp}
+                  maxLength={6}
+                  containerClassName="justify-start"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleGetOTP}
+                  disabled={isSendingOtp}
+                  className="h-12 rounded-lg flex-1"
+                >
+                  Resend OTP
+                </Button>
+                <Button
+                  onClick={handleVerifyOTP}
+                  disabled={otp.length !== 6 || isVerifyingOtp}
+                  className="h-12 rounded-lg flex-1"
+                  style={{ backgroundColor: '#FF9933' }}
+                >
+                  {isVerifyingOtp ? 'Verifying...' : 'Verify & Login'}
+                </Button>
+              </div>
+
+              {devOtp ? (
+                <p className="text-xs text-gray-500">
+                  Development OTP for this number: {devOtp}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </div>
 
         <div className="mt-8 text-center">

@@ -69,6 +69,24 @@ public class AuthController : ControllerBase
         return Ok(ToUserDto(user));
     }
 
+    /// <summary>PATCH /api/auth/me - Update current user's profile</summary>
+    [HttpPatch("me")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest req)
+    {
+        var userId = GetUserId();
+        if (userId is null) return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null) return NotFound();
+
+        user.Name = req.Name.Trim();
+        user.Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim();
+
+        await _db.SaveChangesAsync();
+        return Ok(ToUserDto(user));
+    }
+
     private int? GetUserId()
     {
         var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)

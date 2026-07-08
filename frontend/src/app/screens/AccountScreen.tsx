@@ -1,10 +1,22 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   User, MapPin, ShoppingBag, Heart, Bell, HelpCircle,
-  Shield, LogOut, ChevronRight, Star, Package,
+  Shield, LogOut, ChevronRight, Star, Package, Pencil,
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
 import BottomNav from '../components/BottomNav';
+import { authApi, type ApiUser } from '../../lib/api';
 
 const menuSections = [
   {
@@ -27,6 +39,74 @@ const menuSections = [
 
 export default function AccountScreen() {
   const navigate = useNavigate();
+  const [user, setUser] = useState<ApiUser>({
+    id: 0,
+    name: 'Customer',
+    phone: '',
+    email: '',
+  });
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [profileName, setProfileName] = useState(user.name);
+  const [profileEmail, setProfileEmail] = useState(user.email ?? '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    authApi.me().then((result) => {
+      if (!isMounted || !result.data) return;
+      setUser(result.data);
+      setProfileName(result.data.name);
+      setProfileEmail(result.data.email ?? '');
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const openEditProfile = () => {
+    setProfileName(user.name);
+    setProfileEmail(user.email ?? '');
+    setProfileError('');
+    setIsEditOpen(true);
+  };
+
+  const saveProfile = async () => {
+    const trimmedName = profileName.trim();
+    const trimmedEmail = profileEmail.trim();
+
+    if (trimmedName.length < 2) {
+      setProfileError('Enter a name with at least 2 characters.');
+      return;
+    }
+
+    setIsSaving(true);
+    setProfileError('');
+
+    try {
+      const result = await authApi.updateProfile({
+        name: trimmedName,
+        email: trimmedEmail || undefined,
+      });
+
+      if (result.error || !result.data) {
+        setProfileError(result.error ?? 'Unable to update profile.');
+        return;
+      }
+
+      setUser(result.data);
+      setIsEditOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    authApi.logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -39,10 +119,20 @@ export default function AccountScreen() {
           <div className="w-16 h-16 rounded-full bg-white/30 flex items-center justify-center">
             <User className="w-8 h-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Venkat Kumar</h1>
-            <p className="text-orange-100 text-sm">venkat@example.com</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-white truncate">{user.name}</h1>
+            <p className="text-orange-100 text-sm truncate">
+              {user.email || (user.phone ? `+91 ${user.phone}` : 'Add your profile details')}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={openEditProfile}
+            className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+            aria-label="Edit profile"
+          >
+            <Pencil className="w-5 h-5 text-white" />
+          </button>
         </div>
 
         {/* Stats */}
@@ -50,8 +140,8 @@ export default function AccountScreen() {
           {[
             { label: 'Orders',  value: '12',   icon: Package },
             { label: 'Wishlist', value: '5',   icon: Heart },
-            { label: 'Reviews', value: '4.8 ★', icon: Star },
-          ].map(({ label, value, icon: Icon }) => (
+            { label: 'Reviews', value: '4.8/5', icon: Star },
+          ].map(({ label, value }) => (
             <div
               key={label}
               className="bg-white/20 rounded-xl p-3 text-center"
@@ -94,7 +184,7 @@ export default function AccountScreen() {
 
         {/* Logout */}
         <button
-          onClick={() => navigate('/')}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-red-100 hover:bg-red-50 transition-colors text-left"
         >
           <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
@@ -104,11 +194,72 @@ export default function AccountScreen() {
         </button>
 
         <p className="text-center text-xs text-gray-400 pb-2">
-          SuperMarket App · v1.0.0
+          SuperMarket App - v1.0.0
         </p>
       </div>
 
       <BottomNav />
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit profile</DialogTitle>
+            <DialogDescription>
+              Update the name and email shown on your account.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full name
+              </label>
+              <Input
+                value={profileName}
+                onChange={(event) => setProfileName(event.target.value)}
+                placeholder="Enter your name"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email address
+              </label>
+              <Input
+                type="email"
+                value={profileEmail}
+                onChange={(event) => setProfileEmail(event.target.value)}
+                placeholder="you@example.com"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            {profileError ? (
+              <p className="text-sm text-red-600">{profileError}</p>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={saveProfile}
+              disabled={isSaving}
+              style={{ backgroundColor: '#FF9933' }}
+            >
+              {isSaving ? 'Saving...' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -26,9 +26,24 @@ async function apiFetch<T>(
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-    if (res.status === 204) return { data: null, error: null };
-    const json = await res.json();
-    if (!res.ok) return { data: null, error: json?.error ?? `HTTP ${res.status}` };
+    const body = await res.text();
+    let json: any = null;
+
+    if (body) {
+      try {
+        json = JSON.parse(body);
+      } catch {
+        json = null;
+      }
+    }
+
+    if (!res.ok) {
+      return {
+        data: null,
+        error: json?.error ?? json?.title ?? (body || `HTTP ${res.status}`),
+      };
+    }
+
     return { data: json as T, error: null };
   } catch (err) {
     return { data: null, error: (err as Error).message };
@@ -95,6 +110,14 @@ export interface CouponValidation {
   discountType?: string; discountValue: number; discount: number; finalTotal: number;
 }
 
+export interface ApiUser {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string;
+  createdAt?: string;
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   sendOtp: (phone: string) =>
@@ -103,7 +126,7 @@ export const authApi = {
     }),
 
   verifyOtp: async (phone: string, otp: string, name?: string) => {
-    const result = await apiFetch<{ token: string; user: { id: number; name: string; phone: string } }>(
+    const result = await apiFetch<{ token: string; user: ApiUser }>(
       '/auth/verify-otp',
       { method: 'POST', body: JSON.stringify({ phone, otp, name }) }
     );
@@ -111,7 +134,10 @@ export const authApi = {
     return result;
   },
 
-  me: () => apiFetch<{ id: number; name: string; phone: string; email?: string }>('/auth/me'),
+  me: () => apiFetch<ApiUser>('/auth/me'),
+
+  updateProfile: (payload: { name: string; email?: string }) =>
+    apiFetch<ApiUser>('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 
   logout: () => { tokenStore.clear(); },
 };

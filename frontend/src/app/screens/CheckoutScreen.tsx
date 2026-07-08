@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router';
 import { ArrowLeft, MapPin, Wallet, Check, CreditCard, Building2, Smartphone, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
 import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
+import { addressesApi, paymentsApi, type ApiAddress } from '../../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type PaymentMethod = 'cod' | 'razorpay';
@@ -17,6 +19,8 @@ interface UpiOption {
   color: string;
 }
 
+type AddressForm = Pick<ApiAddress, 'label' | 'line1' | 'city' | 'state' | 'pincode'>;
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const UPI_OPTIONS: UpiOption[] = [
   { id: 'gpay',    label: 'GPay',    icon: '🇬',  color: '#4285F4' },
@@ -24,8 +28,6 @@ const UPI_OPTIONS: UpiOption[] = [
   { id: 'paytm',   label: 'Paytm',   icon: '💙',  color: '#002970' },
   { id: 'bhim',    label: 'BHIM',    icon: '🏦',  color: '#1B63B2' },
 ];
-
-const RAZORPAY_KEY = 'YOUR_RAZORPAY_KEY_ID'; // 🔑 Replace with your Razorpay key
 
 // ─── Helper: generate a mock order id (replace with real backend call) ────────
 function generateMockOrderId() {
@@ -117,15 +119,33 @@ export default function CheckoutScreen() {
   const navigate = useNavigate();
   const { getCartTotal, clearCart } = useCart();
 
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cod');
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('razorpay');
   const [razorpaySubMethod, setRazorpaySubMethod] = useState<RazorpaySubMethod>('upi');
   const [selectedUpi, setSelectedUpi] = useState<string>('gpay');
-  const [isOnlineExpanded, setIsOnlineExpanded] = useState(false);
+  const [isOnlineExpanded, setIsOnlineExpanded] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDemoPayment, setShowDemoPayment] = useState(false);
+  const [demoOrderId, setDemoOrderId] = useState('');
+  const [selectedAddress, setSelectedAddress] = useState<ApiAddress | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState<AddressForm>({
+    label: 'Home',
+    line1: '',
+    city: '',
+    state: '',
+    pincode: '',
+  });
+  const [addressError, setAddressError] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const deliveryFee = getCartTotal() >= 299 ? 0 : 40;
   const grandTotal = getCartTotal() + deliveryFee;
+
+  const openDemoPayment = useCallback((orderId?: string) => {
+    setDemoOrderId(orderId || generateMockOrderId());
+    setShowDemoPayment(true);
+    setIsProcessing(false);
+  }, []);
 
   // ── Handle COD ──────────────────────────────────────────────────────────────
   const handleCOD = useCallback(() => {
@@ -137,11 +157,29 @@ export default function CheckoutScreen() {
   const handleRazorpay = useCallback(async () => {
     setIsProcessing(true);
     setErrorMsg('');
-    try {
-      await ensureRazorpayLoaded();
 
-      // In production: call your backend to create a Razorpay order
-      const mockOrderId = generateMockOrderId();
+    if (grandTotal <= 0) {
+      setErrorMsg('Add items to your cart before starting payment.');
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      const orderResponse = await paymentsApi.createOrder(grandTotal);
+      if (orderResponse.error || !orderResponse.data) {
+        setErrorMsg(orderResponse.error ?? 'Unable to start online payment.');
+        setIsProcessing(false);
+        return;
+      }
+
+      const { orderId, keyId } = orderResponse.data;
+
+      if (!keyId || keyId === 'YOUR_RAZORPAY_KEY_ID') {
+        openDemoPayment(orderId);
+        return;
+      }
+
+      await ensureRazorpayLoaded();
 
       const methodConfig: Record<RazorpaySubMethod, object> = {
         upi:        { upi: true, card: false, netbanking: false, wallet: false },
@@ -150,12 +188,12 @@ export default function CheckoutScreen() {
       };
 
       const options: RazorpayOptions = {
-        key: RAZORPAY_KEY,
+        key: keyId,
         amount: grandTotal * 100, // paise
         currency: 'INR',
         name: 'Shree Sai Mega Mart',
         description: 'Grocery Order Payment',
-        order_id: mockOrderId,
+        order_id: orderId,
         method: methodConfig[razorpaySubMethod] as RazorpayOptions['method'],
         prefill: {
           name:    'Customer',
@@ -171,13 +209,25 @@ export default function CheckoutScreen() {
           confirm_close: true,
         },
         handler: (response) => {
-          clearCart();
-          navigate('/order-success', {
-            state: {
-              paymentMethod: 'online',
-              subMethod: razorpaySubMethod,
-              paymentId: response.razorpay_payment_id,
-            },
+          paymentsApi.verify(
+            response.razorpay_order_id ?? orderId,
+            response.razorpay_payment_id,
+            response.razorpay_signature ?? ''
+          ).then((verifyResult) => {
+            if (verifyResult.error) {
+              setErrorMsg(verifyResult.error);
+              setIsProcessing(false);
+              return;
+            }
+
+            clearCart();
+            navigate('/order-success', {
+              state: {
+                paymentMethod: 'online',
+                subMethod: razorpaySubMethod,
+                paymentId: response.razorpay_payment_id,
+              },
+            });
           });
         },
       };
@@ -185,13 +235,58 @@ export default function CheckoutScreen() {
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
-      setErrorMsg('Could not initialise payment. Please try again.');
+      setErrorMsg(err instanceof Error ? err.message : 'Could not initialise payment. Please try again.');
       setIsProcessing(false);
+      return;
     }
-  }, [grandTotal, razorpaySubMethod, clearCart, navigate]);
+    setIsProcessing(false);
+  }, [grandTotal, razorpaySubMethod, clearCart, navigate, openDemoPayment]);
+
+  const handleDemoPayment = () => {
+    clearCart();
+    setShowDemoPayment(false);
+    navigate('/order-success', {
+      state: {
+        paymentMethod: 'online',
+        subMethod: razorpaySubMethod,
+        paymentId: demoOrderId || `DEMO-${Date.now()}`,
+      },
+    });
+  };
+
+  const handleAddressChange = (field: keyof AddressForm, value: string) => {
+    setAddressForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSaveAddress = async () => {
+    const nextAddress = {
+      label: addressForm.label.trim() || 'Home',
+      line1: addressForm.line1.trim(),
+      city: addressForm.city.trim(),
+      state: addressForm.state.trim(),
+      pincode: addressForm.pincode.replace(/\D/g, ''),
+    };
+
+    if (!nextAddress.line1 || !nextAddress.city || !nextAddress.state || nextAddress.pincode.length !== 6) {
+      setAddressError('Enter full address details with a valid 6-digit pincode.');
+      return;
+    }
+
+    setAddressError('');
+    const result = await addressesApi.add({ ...nextAddress, isDefault: true });
+
+    setSelectedAddress(result.data ?? { id: Date.now(), ...nextAddress, isDefault: true });
+    setShowAddressForm(false);
+  };
 
   // ── Place Order dispatcher ───────────────────────────────────────────────────
   const handlePlaceOrder = () => {
+    if (!selectedAddress) {
+      setShowAddressForm(true);
+      setErrorMsg('');
+      return;
+    }
+
     if (selectedPayment === 'cod') {
       handleCOD();
     } else {
@@ -254,33 +349,101 @@ export default function CheckoutScreen() {
                 <MapPin size={20} color="#FF9933" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div>
-                    <p style={{ fontWeight: 600, marginBottom: 2, fontSize: 14 }}>Home</p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontWeight: 600, marginBottom: 2, fontSize: 14 }}>
+                      {selectedAddress?.label ?? 'Add delivery address'}
+                    </p>
                     <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5 }}>
-                      45, Anna Nagar West Extension,<br />
-                      Chennai, Tamil Nadu - 600101
+                      {selectedAddress
+                        ? <>{selectedAddress.line1}<br />{selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}</>
+                        : 'Add your address before placing the order'}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    style={{ color: '#FF9933', fontSize: 12, fontWeight: 600, marginTop: -4 }}
-                  >
-                    Change
-                  </Button>
+                  {selectedAddress && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowAddressForm(true)}
+                      style={{ color: '#FF9933', fontSize: 12, fontWeight: 600, marginTop: -4 }}
+                    >
+                      Change
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
           </Card>
-          <Button
-            variant="outline"
-            style={{
-              width: '100%', marginTop: 10, height: 42, borderRadius: 10,
-              border: '1.5px dashed #FF9933', color: '#FF9933', fontWeight: 600, fontSize: 13,
-            }}
-          >
-            + Add New Address
-          </Button>
+
+          {showAddressForm && (
+            <Card style={{ borderRadius: 16, border: '1px solid #f0f0f0', padding: 14, background: '#fff', marginTop: 10 }}>
+              <div style={{ display: 'grid', gap: 10 }}>
+                <Input
+                  value={addressForm.label}
+                  onChange={(event) => handleAddressChange('label', event.target.value)}
+                  placeholder="Label, e.g. Home"
+                  className="h-11 rounded-lg"
+                />
+                <Input
+                  value={addressForm.line1}
+                  onChange={(event) => handleAddressChange('line1', event.target.value)}
+                  placeholder="House no, street, area"
+                  className="h-11 rounded-lg"
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <Input
+                    value={addressForm.city}
+                    onChange={(event) => handleAddressChange('city', event.target.value)}
+                    placeholder="City"
+                    className="h-11 rounded-lg"
+                  />
+                  <Input
+                    value={addressForm.state}
+                    onChange={(event) => handleAddressChange('state', event.target.value)}
+                    placeholder="State"
+                    className="h-11 rounded-lg"
+                  />
+                </div>
+                <Input
+                  value={addressForm.pincode}
+                  onChange={(event) => handleAddressChange('pincode', event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6-digit pincode"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="h-11 rounded-lg"
+                />
+                {addressError && <p style={{ color: '#e11d48', fontSize: 12, margin: 0 }}>{addressError}</p>}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddressForm(false)}
+                    className="h-11 rounded-lg flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveAddress}
+                    className="h-11 rounded-lg flex-1"
+                    style={{ backgroundColor: '#FF9933' }}
+                  >
+                    Save Address
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {!showAddressForm && !selectedAddress && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAddressForm(true)}
+              style={{
+                width: '100%', marginTop: 10, height: 42, borderRadius: 10,
+                border: '1.5px dashed #FF9933', color: '#FF9933', fontWeight: 600, fontSize: 13,
+              }}
+            >
+              + Add New Address
+            </Button>
+          )}
         </section>
 
         {/* ── Payment Method ── */}
@@ -535,7 +698,8 @@ export default function CheckoutScreen() {
       {/* ── Fixed Bottom Bar ── */}
       <div
         style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
+          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100%', maxWidth: 448, zIndex: 30,
           background: '#fff', borderTop: '1px solid #e5e7eb',
           padding: '14px 16px',
           boxShadow: '0 -4px 20px rgba(0,0,0,0.07)',
@@ -595,6 +759,72 @@ export default function CheckoutScreen() {
           <span style={{ color: '#FF9933', fontWeight: 600 }}>Terms &amp; Conditions</span>
         </p>
       </div>
+
+      {showDemoPayment && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 360,
+              borderRadius: 20,
+              background: '#fff',
+              padding: 20,
+              boxShadow: '0 24px 80px rgba(0,0,0,0.24)',
+            }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#FF9933', marginBottom: 6 }}>Demo Payment Mode</p>
+            <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 10 }}>Complete your payment</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.5, marginBottom: 14 }}>
+              Razorpay keys are not configured, so this checkout is shown in demo mode.
+              You can still confirm the order and see the payment flow on the frontend.
+            </p>
+
+            <div style={{ borderRadius: 14, background: '#f9fafb', padding: 14, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                <span style={{ color: '#6b7280' }}>Payment method</span>
+                <span style={{ fontWeight: 700 }}>
+                  {razorpaySubMethod === 'upi' ? `UPI · ${UPI_OPTIONS.find(o => o.id === selectedUpi)?.label}` : razorpaySubMethod.toUpperCase()}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: '#6b7280' }}>Amount</span>
+                <span style={{ fontWeight: 800 }}>₹{grandTotal}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDemoPayment(false);
+                  setIsProcessing(false);
+                }}
+                className="h-12 rounded-lg flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDemoPayment}
+                className="h-12 rounded-lg flex-1"
+                style={{ backgroundColor: '#FF9933' }}
+              >
+                Pay Now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

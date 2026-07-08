@@ -170,7 +170,7 @@ export default function CartScreen() {
       </div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 pb-20 safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 bg-white border-t border-gray-200 px-4 py-4 pb-20 safe-area-inset-bottom">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-xs text-gray-500">Total Amount</p>
@@ -181,7 +181,7 @@ export default function CartScreen() {
             className="h-12 px-8 rounded-lg font-bold"
             style={{ backgroundColor: '#FF9933' }}
           >
-            Proceed to Checkout
+            Place Order
           </Button>
         </div>
       </div>

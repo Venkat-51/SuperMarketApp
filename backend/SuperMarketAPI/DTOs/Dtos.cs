@@ -16,6 +16,11 @@ public record AuthResponse(string Token, UserDto User);
 // ── User ─────────────────────────────────────────────────────────────────────
 public record UserDto(int Id, string Name, string Phone, string? Email, DateTime CreatedAt);
 
+public record UpdateProfileRequest(
+    [Required, StringLength(80, MinimumLength = 2)] string Name,
+    [EmailAddress] string? Email
+);
+
 // ── Product ──────────────────────────────────────────────────────────────────
 public record ProductDto(
     int Id,
