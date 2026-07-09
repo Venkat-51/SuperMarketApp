@@ -163,6 +163,7 @@ export default function AccountScreen() {
               {section.items.map(({ id, icon: Icon, label, desc, color }) => (
                 <button
                   key={id}
+                  onClick={() => id === 'orders' ? navigate('/orders') : null}
                   className="w-full flex items-center gap-3 px-4 py-3.5 bg-white hover:bg-gray-50 transition-colors text-left"
                 >
                   <div

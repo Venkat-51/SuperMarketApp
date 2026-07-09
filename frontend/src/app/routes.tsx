@@ -7,6 +7,8 @@ import ProductDetailScreen from './screens/ProductDetailScreen';
 import CartScreen from './screens/CartScreen';
 import CheckoutScreen from './screens/CheckoutScreen';
 import OrderSuccessScreen from './screens/OrderSuccessScreen';
+import OrdersScreen from './screens/OrdersScreen';
+import OrderDetailScreen from './screens/OrderDetailScreen';
 import CategoriesScreen from './screens/CategoriesScreen';
 import AccountScreen from './screens/AccountScreen';
 
@@ -42,6 +44,14 @@ export const router = createBrowserRouter([
   {
     path: '/order-success',
     Component: OrderSuccessScreen,
+  },
+  {
+    path: '/orders',
+    Component: OrdersScreen,
+  },
+  {
+    path: '/orders/:id',
+    Component: OrderDetailScreen,
   },
   {
     path: '/categories',

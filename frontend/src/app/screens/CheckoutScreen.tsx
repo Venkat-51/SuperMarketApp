@@ -6,7 +6,7 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
-import { addressesApi, paymentsApi, type ApiAddress } from '../../lib/api';
+import { addressesApi, paymentsApi, ordersApi, type ApiAddress } from '../../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type PaymentMethod = 'cod' | 'razorpay';
@@ -117,7 +117,7 @@ function SubMethodTab({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CheckoutScreen() {
   const navigate = useNavigate();
-  const { getCartTotal, clearCart } = useCart();
+  const { getCartTotal, clearCart, cartItems } = useCart();
 
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('razorpay');
   const [razorpaySubMethod, setRazorpaySubMethod] = useState<RazorpaySubMethod>('upi');
@@ -148,10 +148,31 @@ export default function CheckoutScreen() {
   }, []);
 
   // ── Handle COD ──────────────────────────────────────────────────────────────
-  const handleCOD = useCallback(() => {
-    clearCart();
-    navigate('/order-success', { state: { paymentMethod: 'cod' } });
-  }, [clearCart, navigate]);
+  const handleCOD = useCallback(async () => {
+    setIsProcessing(true);
+    setErrorMsg('');
+    try {
+      const payload = {
+        items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+        addressId: selectedAddress?.id,
+        paymentMethod: 'cod' as const,
+      };
+
+      const res = await ordersApi.place(payload);
+      if (res.error || !res.data) {
+        setErrorMsg(res.error ?? 'Unable to place order.');
+        setIsProcessing(false);
+        return;
+      }
+
+      clearCart();
+      navigate('/order-success', { state: { paymentMethod: 'cod' } });
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Could not place order.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [cartItems, clearCart, navigate, selectedAddress]);
 
   // ── Handle Razorpay ─────────────────────────────────────────────────────────
   const handleRazorpay = useCallback(async () => {
@@ -213,9 +234,25 @@ export default function CheckoutScreen() {
             response.razorpay_order_id ?? orderId,
             response.razorpay_payment_id,
             response.razorpay_signature ?? ''
-          ).then((verifyResult) => {
+          ).then(async (verifyResult) => {
             if (verifyResult.error) {
               setErrorMsg(verifyResult.error);
+              setIsProcessing(false);
+              return;
+            }
+
+            // Place order on the backend with payment details
+            const payload = {
+              items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+              addressId: selectedAddress?.id,
+              paymentMethod: 'online' as const,
+              paymentId: verifyResult.data?.paymentId ?? response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id ?? orderId,
+            };
+
+            const placeRes = await ordersApi.place(payload);
+            if (placeRes.error || !placeRes.data) {
+              setErrorMsg(placeRes.error ?? 'Unable to record order.');
               setIsProcessing(false);
               return;
             }
@@ -243,15 +280,28 @@ export default function CheckoutScreen() {
   }, [grandTotal, razorpaySubMethod, clearCart, navigate, openDemoPayment]);
 
   const handleDemoPayment = () => {
-    clearCart();
-    setShowDemoPayment(false);
-    navigate('/order-success', {
-      state: {
-        paymentMethod: 'online',
-        subMethod: razorpaySubMethod,
-        paymentId: demoOrderId || `DEMO-${Date.now()}`,
-      },
-    });
+    (async () => {
+      setIsProcessing(true);
+      const paymentId = demoOrderId || `DEMO-${Date.now()}`;
+      const payload = {
+        items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+        addressId: selectedAddress?.id,
+        paymentMethod: 'online' as const,
+        paymentId,
+      };
+      const res = await ordersApi.place(payload);
+      if (res.error || !res.data) {
+        setErrorMsg(res.error ?? 'Unable to place demo order.');
+        setIsProcessing(false);
+        return;
+      }
+      clearCart();
+      setShowDemoPayment(false);
+      setIsProcessing(false);
+      navigate('/order-success', {
+        state: { paymentMethod: 'online', subMethod: razorpaySubMethod, paymentId },
+      });
+    })();
   };
 
   const handleAddressChange = (field: keyof AddressForm, value: string) => {
