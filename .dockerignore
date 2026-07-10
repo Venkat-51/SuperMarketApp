@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Node / Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/.env
+frontend/.env.local
+frontend/npm-debug.log
+
+# .NET / Backend
+backend/supermarketapi/bin
+backend/supermarketapi/obj
+backend/supermarketapi.vs
+backend/supermarketapi/appsettings.Development.json
+
+# OS / Editor
+.vscode
+.idea
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+logs
+
+# Environment / secrets
+.env
+.env.*
