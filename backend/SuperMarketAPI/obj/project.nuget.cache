@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "GNzc8G7yxO0=",
+  "dgSpecHash": "eGYJj34tGgg=",
   "success": true,
-  "projectFilePath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\SuperMarketAPI.csproj",
+  "projectFilePath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\SuperMarketAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\venkat\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\venkat\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\8.0.28\\microsoft.aspnetcore.authentication.jwtbearer.8.0.28.nupkg.sha512",

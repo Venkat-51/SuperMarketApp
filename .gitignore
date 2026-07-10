@@ -1,0 +1,9 @@
+node_modules/
+frontend/node_modules/
+backend/supermarketapi/bin/
+backend/supermarketapi/obj/
+dist/
+frontend/dist/
+.env
+.env.local
+.vs/

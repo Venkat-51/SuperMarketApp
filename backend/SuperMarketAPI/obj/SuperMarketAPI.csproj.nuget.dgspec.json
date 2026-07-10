@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\SuperMarketAPI.csproj": {}
+    "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\SuperMarketAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\SuperMarketAPI.csproj": {
+    "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\SuperMarketAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\SuperMarketAPI.csproj",
+        "projectUniqueName": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\SuperMarketAPI.csproj",
         "projectName": "SuperMarketAPI",
-        "projectPath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\SuperMarketAPI.csproj",
+        "projectPath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\SuperMarketAPI.csproj",
         "packagesPath": "C:\\Users\\venkat\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\SuperMarketAPI\\obj\\",
+        "outputPath": "C:\\Users\\venkat\\OneDrive\\Desktop\\SuperMarket APP\\backend\\supermarketapi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\venkat\\AppData\\Roaming\\NuGet\\NuGet.Config"
