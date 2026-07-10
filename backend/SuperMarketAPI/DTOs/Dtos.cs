@@ -118,3 +118,12 @@ public record CouponValidationResponse(
 
 // ── Wishlist ──────────────────────────────────────────────────────────────────
 public record WishlistItemDto(int ProductId, ProductDto Product, DateTime AddedAt);
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+public record ReviewDto(int Id, int ProductId, int UserId, string UserName, int Rating, string? Comment, DateTime CreatedAt);
+
+public record CreateReviewRequest(
+    [Required] int ProductId,
+    [Required, Range(1, 5)] int Rating,
+    [StringLength(1000)] string? Comment
+);

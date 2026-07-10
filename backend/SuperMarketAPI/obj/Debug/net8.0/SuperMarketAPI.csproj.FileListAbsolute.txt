@@ -147,3 +147,5 @@ C:\tmp\SuperMarketAPI-build\SuperMarketAPI.deps.json
 C:\tmp\SuperMarketAPI-build\SuperMarketAPI.runtimeconfig.json
 C:\tmp\SuperMarketAPI-build\SuperMarketAPI.dll
 C:\tmp\SuperMarketAPI-build\SuperMarketAPI.pdb
+C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\bin\Debug\net8.0\package-lock.json
+C:\Users\venkat\OneDrive\Desktop\SuperMarket APP\backend\SuperMarketAPI\bin\Debug\net8.0\package.json

@@ -276,6 +276,37 @@ namespace SuperMarketAPI.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("SuperMarketAPI.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("SuperMarketAPI.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -401,6 +432,25 @@ namespace SuperMarketAPI.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("SuperMarketAPI.Models.Review", b =>
+                {
+                    b.HasOne("SuperMarketAPI.Models.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SuperMarketAPI.Models.User", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SuperMarketAPI.Models.WishlistItem", b =>
                 {
                     b.HasOne("SuperMarketAPI.Models.Product", "Product")
@@ -431,6 +481,8 @@ namespace SuperMarketAPI.Migrations
 
                     b.Navigation("OrderItems");
 
+                    b.Navigation("Reviews");
+
                     b.Navigation("WishlistItems");
                 });
 
@@ -441,6 +493,8 @@ namespace SuperMarketAPI.Migrations
                     b.Navigation("CartItems");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("WishlistItems");
                 });

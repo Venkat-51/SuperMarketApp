@@ -20,8 +20,7 @@ export default function SplashScreen() {
             <span className="text-5xl">🛒</span>
           </div>
         </div>
-        <h1 className="text-white text-3xl font-bold mb-2">Shree Sai</h1>
-        <h2 className="text-white text-2xl font-bold">Mega Mart</h2>
+        <h1 className="text-white text-3xl font-bold mb-2">Super Market App</h1>
         <p className="text-white/90 mt-4 text-sm">Your Daily Grocery Partner</p>
       </div>
     </div>

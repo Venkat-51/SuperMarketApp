@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, MapPin, Wallet, Check, CreditCard, Building2, Smartphone, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, MapPin, Wallet, Check, CreditCard, Building2, Smartphone, ChevronDown, ChevronUp, ShieldCheck, User, Pencil } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
-import { addressesApi, paymentsApi, ordersApi, type ApiAddress } from '../../lib/api';
+import { addressesApi, paymentsApi, ordersApi, authApi, type ApiAddress } from '../../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type PaymentMethod = 'cod' | 'razorpay';
@@ -23,10 +23,10 @@ type AddressForm = Pick<ApiAddress, 'label' | 'line1' | 'city' | 'state' | 'pinc
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const UPI_OPTIONS: UpiOption[] = [
-  { id: 'gpay',    label: 'GPay',    icon: '🇬',  color: '#4285F4' },
-  { id: 'phonepe', label: 'PhonePe', icon: '📱',  color: '#5F259F' },
-  { id: 'paytm',   label: 'Paytm',   icon: '💙',  color: '#002970' },
-  { id: 'bhim',    label: 'BHIM',    icon: '🏦',  color: '#1B63B2' },
+  { id: 'gpay', label: 'GPay', icon: '🇬', color: '#4285F4' },
+  { id: 'phonepe', label: 'PhonePe', icon: '📱', color: '#5F259F' },
+  { id: 'paytm', label: 'Paytm', icon: '💙', color: '#002970' },
+  { id: 'bhim', label: 'BHIM', icon: '🏦', color: '#1B63B2' },
 ];
 
 // ─── Helper: generate a mock order id (replace with real backend call) ────────
@@ -119,7 +119,7 @@ export default function CheckoutScreen() {
   const navigate = useNavigate();
   const { getCartTotal, clearCart, cartItems } = useCart();
 
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('razorpay');
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [razorpaySubMethod, setRazorpaySubMethod] = useState<RazorpaySubMethod>('upi');
   const [selectedUpi, setSelectedUpi] = useState<string>('gpay');
   const [isOnlineExpanded, setIsOnlineExpanded] = useState(true);
@@ -137,6 +137,9 @@ export default function CheckoutScreen() {
   });
   const [addressError, setAddressError] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [savedName, setSavedName] = useState('');
 
   const deliveryFee = getCartTotal() >= 299 ? 0 : 40;
   const grandTotal = getCartTotal() + deliveryFee;
@@ -147,10 +150,43 @@ export default function CheckoutScreen() {
     setIsProcessing(false);
   }, []);
 
+  const normalizeNameValue = (value?: string | null) => {
+    const trimmedValue = value?.trim() ?? '';
+    return trimmedValue.toLowerCase() === 'add your name' ? '' : trimmedValue;
+  };
+
+  const validateAndPersistName = useCallback(async () => {
+    const trimmedName = normalizeNameValue(name);
+
+    if (!trimmedName) {
+      setNameError('Please enter your name');
+      return false;
+    }
+
+    setNameError('');
+
+    if (trimmedName !== savedName) {
+      const result = await authApi.updateProfile({ name: trimmedName });
+      if (result.error || !result.data) {
+        setErrorMsg(result.error ?? 'Unable to save your name.');
+        return false;
+      }
+
+      setSavedName(result.data.name);
+    }
+
+    return true;
+  }, [name, savedName]);
+
   // ── Handle COD ──────────────────────────────────────────────────────────────
   const handleCOD = useCallback(async () => {
-    setIsProcessing(true);
     setErrorMsg('');
+
+    if (!(await validateAndPersistName())) {
+      return;
+    }
+
+    setIsProcessing(true);
     try {
       const payload = {
         items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
@@ -172,12 +208,17 @@ export default function CheckoutScreen() {
     } finally {
       setIsProcessing(false);
     }
-  }, [cartItems, clearCart, navigate, selectedAddress]);
+  }, [cartItems, clearCart, navigate, selectedAddress, validateAndPersistName]);
 
   // ── Handle Razorpay ─────────────────────────────────────────────────────────
   const handleRazorpay = useCallback(async () => {
-    setIsProcessing(true);
     setErrorMsg('');
+
+    if (!(await validateAndPersistName())) {
+      return;
+    }
+
+    setIsProcessing(true);
 
     if (grandTotal <= 0) {
       setErrorMsg('Add items to your cart before starting payment.');
@@ -203,8 +244,8 @@ export default function CheckoutScreen() {
       await ensureRazorpayLoaded();
 
       const methodConfig: Record<RazorpaySubMethod, object> = {
-        upi:        { upi: true, card: false, netbanking: false, wallet: false },
-        card:       { upi: false, card: true, netbanking: false, wallet: false },
+        upi: { upi: true, card: false, netbanking: false, wallet: false },
+        card: { upi: false, card: true, netbanking: false, wallet: false },
         netbanking: { upi: false, card: false, netbanking: true, wallet: false },
       };
 
@@ -212,13 +253,13 @@ export default function CheckoutScreen() {
         key: keyId,
         amount: grandTotal * 100, // paise
         currency: 'INR',
-        name: 'Shree Sai Mega Mart',
+        name: 'Super Market App',
         description: 'Grocery Order Payment',
         order_id: orderId,
         method: methodConfig[razorpaySubMethod] as RazorpayOptions['method'],
-        prefill: {
-          name:    'Customer',
-          email:   'customer@example.com',
+        prefill: {  
+          name: name.trim(),
+          email: 'customer@example.com',
           contact: '9999999999',
         },
         theme: { color: '#FF9933' },
@@ -277,7 +318,7 @@ export default function CheckoutScreen() {
       return;
     }
     setIsProcessing(false);
-  }, [grandTotal, razorpaySubMethod, clearCart, navigate, openDemoPayment]);
+  }, [clearCart, grandTotal, name, navigate, openDemoPayment, razorpaySubMethod, validateAndPersistName]);
 
   const handleDemoPayment = () => {
     (async () => {
@@ -309,6 +350,9 @@ export default function CheckoutScreen() {
   };
 
   const handleSaveAddress = async () => {
+    if (!(await validateAndPersistName())) {
+      return;
+    }
     const nextAddress = {
       label: addressForm.label.trim() || 'Home',
       line1: addressForm.line1.trim(),
@@ -330,7 +374,16 @@ export default function CheckoutScreen() {
   };
 
   // ── Place Order dispatcher ───────────────────────────────────────────────────
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (!(await validateAndPersistName())) {
+      return;
+    }
+
+    if (!selectedPayment) {
+      setErrorMsg('Please select a payment method');
+      return;
+    }
+
     if (!selectedAddress) {
       setShowAddressForm(true);
       setErrorMsg('');
@@ -344,9 +397,37 @@ export default function CheckoutScreen() {
     }
   };
 
+  useEffect(() => {
+    (async () => {
+      const res = await authApi.me();
+      if (!res.error && res.data) {
+        const currentName = normalizeNameValue(res.data.name);
+
+        if (!currentName) {
+          setName('');
+        } else {
+          setName(currentName);
+          setSavedName(currentName);
+        }
+      }
+    })();
+  }, []);
+
+  // ── Auto-select saved address on page load ──────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const res = await addressesApi.list();
+      if (!res.error && res.data && res.data.length > 0) {
+        const defaultAddr = res.data.find((a) => a.isDefault) ?? res.data[0];
+        setSelectedAddress(defaultAddr);
+      }
+    })();
+  }, []);
+
   const handleSelectOnline = () => {
     setSelectedPayment('razorpay');
     setIsOnlineExpanded(true);
+    setErrorMsg('');
   };
 
   return (
@@ -383,6 +464,54 @@ export default function CheckoutScreen() {
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
+
+        {/* ── Name Section ── */}
+        <section style={{ marginBottom: 16 }}>
+          <h3 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Name <span style={{ color: '#ef4444' }}>*</span></h3>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280' }}>Your name is required before you can place the order.</p>
+          <Card style={{ borderRadius: 16, border: '1px solid #f0f0f0', padding: 16, background: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: '#FFF5EB', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <User size={20} color="#FF9933" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Input
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    if (nameError) setNameError('');
+                  }}
+                  placeholder="Enter your name"
+                  aria-required="true"
+                  aria-invalid={Boolean(nameError)}
+                  className="h-11 rounded-lg"
+                  style={{
+                    width: '100%',
+                    fontSize: 14,
+                    background: name.trim() ? '#fff' : '#f3f4f6',
+                    borderColor: nameError ? '#ef4444' : '#e5e7eb',
+                    boxShadow: nameError ? '0 0 0 1px #ef4444' : 'none',
+                  }}
+                />
+                {nameError ? (
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                    {nameError}
+                  </p>
+                ) : (
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                    Required field
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        </section>
 
         {/* ── Delivery Address ── */}
         <section style={{ marginBottom: 16 }}>
@@ -775,13 +904,15 @@ export default function CheckoutScreen() {
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Payment via</p>
             <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: 0 }}>
-              {selectedPayment === 'cod'
-                ? '💵 Cash on Delivery'
-                : razorpaySubMethod === 'upi'
-                ? `📱 UPI · ${UPI_OPTIONS.find(o => o.id === selectedUpi)?.label}`
-                : razorpaySubMethod === 'card'
-                ? '💳 Card Payment'
-                : '🏦 Net Banking'}
+              {!selectedPayment
+                ? 'Select payment method'
+                : selectedPayment === 'cod'
+                  ? '💵 Cash on Delivery'
+                  : razorpaySubMethod === 'upi'
+                    ? `📱 UPI · ${UPI_OPTIONS.find(o => o.id === selectedUpi)?.label}`
+                    : razorpaySubMethod === 'card'
+                      ? '💳 Card Payment'
+                      : '🏦 Net Banking'}
             </p>
           </div>
         </div>

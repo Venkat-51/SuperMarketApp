@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { MapPin, Bell, ShoppingCart, Search, ChevronRight, X } from 'lucide-react';
+import { MapPin, Bell, ShoppingCart, Search, ChevronRight, X, Heart } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -9,12 +9,14 @@ import BottomNav from '../components/BottomNav';
 import { products, categories } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { wishlistApi } from '../../lib/api';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { addToCart, getCartCount } = useCart();
   const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 
@@ -24,10 +26,56 @@ export default function HomeScreen() {
     if (cat) setActiveCategory(cat);
   }, [searchParams]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    wishlistApi.get().then((result) => {
+      if (!mounted || !result.data) return;
+      setWishlistIds(new Set(result.data.map((item) => String(item.productId))));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleAddToCart = (product: any, e: React.MouseEvent) => {
     e.stopPropagation();
     addToCart(product);
     setAddedProducts(prev => new Set(prev).add(product.id));
+  };
+
+  const handleToggleWishlist = async (product: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const productId = Number(product.id);
+    const isWishlisted = wishlistIds.has(product.id);
+
+    setWishlistIds((current) => {
+      const next = new Set(current);
+      if (isWishlisted) {
+        next.delete(product.id);
+      } else {
+        next.add(product.id);
+      }
+      return next;
+    });
+
+    const result = isWishlisted
+      ? await wishlistApi.remove(productId)
+      : await wishlistApi.add(productId);
+
+    if (result.error) {
+      setWishlistIds((current) => {
+        const next = new Set(current);
+        if (isWishlisted) {
+          next.add(product.id);
+        } else {
+          next.delete(product.id);
+        }
+        return next;
+      });
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -301,12 +349,28 @@ export default function HomeScreen() {
                   onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <div className="flex gap-3 p-3">
-                    <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50">
+                    <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50 relative">
                       <ImageWithFallback
                         src={product.image}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
+                      <button
+                        type="button"
+                        onClick={e => handleToggleWishlist(product, e)}
+                        aria-label={wishlistIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                        className="absolute top-1 right-1 w-7 h-7 rounded-full flex items-center justify-center shadow-sm"
+                        style={{
+                          backgroundColor: wishlistIds.has(product.id) ? '#FFEEF2' : 'rgba(255,255,255,0.95)',
+                          color: wishlistIds.has(product.id) ? '#E11D48' : '#6b7280',
+                        }}
+                      >
+                        <Heart
+                          className="w-4 h-4"
+                          fill={wishlistIds.has(product.id) ? 'currentColor' : 'none'}
+                          strokeWidth={2}
+                        />
+                      </button>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">

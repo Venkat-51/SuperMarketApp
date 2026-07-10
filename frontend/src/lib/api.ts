@@ -118,6 +118,16 @@ export interface ApiUser {
   createdAt?: string;
 }
 
+export interface ApiReview {
+  id: number;
+  productId: number;
+  userId: number;
+  userName: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   sendOtp: (phone: string) =>
@@ -224,4 +234,12 @@ export const wishlistApi = {
   get: () => apiFetch<{ productId: number; product: ApiProduct; addedAt: string }[]>('/wishlist'),
   add: (productId: number) => apiFetch<{ message: string }>(`/wishlist/${productId}`, { method: 'POST' }),
   remove: (productId: number) => apiFetch<null>(`/wishlist/${productId}`, { method: 'DELETE' }),
+};
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+export const reviewsApi = {
+  getForProduct: (productId: number) => apiFetch<ApiReview[]>(`/reviews/product/${productId}`),
+  getForUser: () => apiFetch<ApiReview[]>('/reviews/user'),
+  add: (payload: { productId: number; rating: number; comment?: string }) =>
+    apiFetch<ApiReview>('/reviews', { method: 'POST', body: JSON.stringify(payload) }),
 };

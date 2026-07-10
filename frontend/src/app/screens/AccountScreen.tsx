@@ -16,7 +16,7 @@ import {
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import BottomNav from '../components/BottomNav';
-import { authApi, type ApiUser } from '../../lib/api';
+import { authApi, ordersApi, wishlistApi, reviewsApi, type ApiUser } from '../../lib/api';
 
 const menuSections = [
   {
@@ -50,6 +50,9 @@ export default function AccountScreen() {
   const [profileEmail, setProfileEmail] = useState(user.email ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -59,6 +62,21 @@ export default function AccountScreen() {
       setUser(result.data);
       setProfileName(result.data.name);
       setProfileEmail(result.data.email ?? '');
+    });
+
+    ordersApi.list().then((result) => {
+      if (!isMounted || !result.data) return;
+      setOrdersCount(result.data.length);
+    });
+
+    wishlistApi.get().then((result) => {
+      if (!isMounted || !result.data) return;
+      setWishlistCount(result.data.length);
+    });
+
+    reviewsApi.getForUser().then((result) => {
+      if (!isMounted || !result.data) return;
+      setReviewsCount(result.data.length);
     });
 
     return () => {
@@ -138,9 +156,9 @@ export default function AccountScreen() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mt-2">
           {[
-            { label: 'Orders',  value: '12',   icon: Package },
-            { label: 'Wishlist', value: '5',   icon: Heart },
-            { label: 'Reviews', value: '4.8/5', icon: Star },
+            { label: 'Orders',  value: ordersCount.toString(),   icon: Package },
+            { label: 'Wishlist', value: wishlistCount.toString(),   icon: Heart },
+            { label: 'Reviews', value: reviewsCount.toString(), icon: Star },
           ].map(({ label, value }) => (
             <div
               key={label}
@@ -153,30 +171,34 @@ export default function AccountScreen() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
+      <div className="px-4 pt-6 space-y-6 pb-24">
         {menuSections.map((section) => (
           <div key={section.title}>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">
               {section.title}
             </p>
             <Card className="rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
               {section.items.map(({ id, icon: Icon, label, desc, color }) => (
                 <button
                   key={id}
-                  onClick={() => id === 'orders' ? navigate('/orders') : null}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 bg-white hover:bg-gray-50 transition-colors text-left"
+                  onClick={() => {
+                    if (id === 'orders') navigate('/orders');
+                    else if (id === 'wishlist') navigate('/wishlist');
+                    else if (id === 'addresses') navigate('/addresses');
+                  }}
+                  className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors text-left"
                 >
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: color + '18' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                    style={{ backgroundColor: color + '15' }}
                   >
                     <Icon className="w-5 h-5" style={{ color }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm">{label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                    <p className="font-semibold text-gray-900 text-sm mb-0.5">{label}</p>
+                    <p className="text-xs text-gray-500">{desc}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
                 </button>
               ))}
             </Card>

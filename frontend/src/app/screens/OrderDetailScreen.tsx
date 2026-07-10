@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { ordersApi, ApiOrder } from '../../lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Star } from 'lucide-react';
+import { ordersApi, reviewsApi, ApiOrder, ApiOrderItem } from '../../lib/api';
 
 export default function OrderDetailScreen() {
   const { id } = useParams();
@@ -10,6 +13,13 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [reviewingItem, setReviewingItem] = useState<ApiOrderItem | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -58,15 +68,31 @@ export default function OrderDetailScreen() {
         <h3 className="font-medium mb-2">Items</h3>
         <div className="space-y-3">
           {order.items.map((it) => (
-            <div key={it.productId} className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">{it.productName}</div>
-                <div className="text-xs text-gray-500">{it.weight} · Qty {it.quantity}</div>
+            <div key={it.productId} className="flex flex-col gap-2 border-b last:border-0 pb-3 last:pb-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{it.productName}</div>
+                  <div className="text-xs text-gray-500">{it.weight} · Qty {it.quantity}</div>
+                </div>
+                <div className="text-right">
+                  <div>₹{(it.price * it.quantity).toFixed(2)}</div>
+                  <div className="text-xs text-gray-500">₹{it.price.toFixed(2)} each</div>
+                </div>
               </div>
-              <div className="text-right">
-                <div>₹{(it.price * it.quantity).toFixed(2)}</div>
-                <div className="text-xs text-gray-500">₹{it.price.toFixed(2)} each</div>
-              </div>
+              {order.status === 'Delivered' && (
+                <button
+                  onClick={() => {
+                    setReviewingItem(it);
+                    setReviewRating(5);
+                    setReviewComment('');
+                    setReviewError('');
+                    setReviewSuccess('');
+                  }}
+                  className="text-xs text-[#FF9933] font-medium self-start flex items-center gap-1"
+                >
+                  <Star className="w-3 h-3" /> Write a Review
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -90,6 +116,62 @@ export default function OrderDetailScreen() {
       <div className="space-y-3">
         <Button onClick={() => navigate('/orders')}>Back to Orders</Button>
       </div>
+
+      <Dialog open={!!reviewingItem} onOpenChange={(open) => !open && setReviewingItem(null)}>
+        <DialogContent className="rounded-2xl max-w-[340px]">
+          <DialogHeader>
+            <DialogTitle>Write a Review</DialogTitle>
+            <DialogDescription>
+              How did you like {reviewingItem?.productName}?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 flex flex-col items-center gap-4">
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setReviewRating(star)}>
+                  <Star
+                    className={`w-8 h-8 ${reviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              className="w-full border rounded-xl p-3 text-sm min-h-[80px]"
+              placeholder="Tell us more about it (optional)"
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+            />
+
+            {reviewError && <p className="text-xs text-red-500">{reviewError}</p>}
+            {reviewSuccess && <p className="text-xs text-green-600 font-medium">{reviewSuccess}</p>}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewingItem(null)}>Cancel</Button>
+            <Button
+              style={{ backgroundColor: '#FF9933' }}
+              disabled={submittingReview || !!reviewSuccess}
+              onClick={async () => {
+                if (!reviewingItem) return;
+                setSubmittingReview(true);
+                setReviewError('');
+                const res = await reviewsApi.add({
+                  productId: reviewingItem.productId,
+                  rating: reviewRating,
+                  comment: reviewComment,
+                });
+                setSubmittingReview(false);
+                if (res.error) setReviewError(res.error);
+                else setReviewSuccess('Review submitted successfully!');
+              }}
+            >
+              {submittingReview ? 'Submitting...' : 'Submit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

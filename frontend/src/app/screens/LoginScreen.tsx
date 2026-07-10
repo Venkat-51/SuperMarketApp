@@ -66,7 +66,7 @@ export default function LoginScreen() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome to</h1>
           <h2 className="text-3xl font-bold" style={{ color: '#FF9933' }}>
-            Shree Sai Mega Mart
+            Super Market App
           </h2>
           <p className="text-gray-600 mt-3">
             Enter your mobile number to get started

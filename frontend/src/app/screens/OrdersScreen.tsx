@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Package, Clock, Tag } from 'lucide-react';
+import { Package, Clock, Tag, ArrowLeft } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ordersApi, ApiOrder } from '../../lib/api';
@@ -23,8 +23,40 @@ export default function OrdersScreen() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">My Orders</h2>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* ── Header ── */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          background: '#fff',
+          borderBottom: '1px solid #f0f0f0',
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            padding: '8px',
+            marginLeft: -8,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: 8,
+            display: 'flex',
+          }}
+        >
+          <ArrowLeft size={22} />
+        </button>
+        <h2 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>My Orders</h2>
+      </div>
+
+      <div className="px-4 pt-4">
+
 
       {loading && <p className="text-sm text-gray-500">Loading orders...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -57,6 +89,7 @@ export default function OrdersScreen() {
             </button>
           </Card>
         ))}
+      </div>
       </div>
     </div>
   );

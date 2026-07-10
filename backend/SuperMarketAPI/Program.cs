@@ -58,7 +58,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title       = "Shree Sai Mega Mart API",
+        Title       = "Super Market App",
         Version     = "v1",
         Description = "SuperMarket App REST API — Products, Orders, Payments, Cart, Wishlist"
     });
@@ -109,7 +109,7 @@ app.MapControllers();
 // Health check endpoint
 app.MapGet("/", () => new
 {
-    app    = "Shree Sai Mega Mart API",
+    app    = "Super Market App API",
     status = "running",
     docs   = "/swagger",
     time   = DateTime.UtcNow

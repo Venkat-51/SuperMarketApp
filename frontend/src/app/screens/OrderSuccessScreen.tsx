@@ -1,6 +1,9 @@
 import { useNavigate, useLocation } from 'react-router';
+import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { CheckCircle2, Package } from 'lucide-react';
+import { authApi } from '../../lib/api';
 
 interface LocationState {
   paymentMethod?: 'cod' | 'online';
@@ -25,6 +28,11 @@ export default function OrderSuccessScreen() {
   const location = useLocation();
   const state = (location.state || {}) as LocationState;
 
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [name, setName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [meChecked, setMeChecked] = useState(false);
+
   const paymentKey =
     state.paymentMethod === 'online' && state.subMethod
       ? state.subMethod
@@ -34,6 +42,18 @@ export default function OrderSuccessScreen() {
 
   const paymentInfo = PAYMENT_LABELS[paymentKey];
   const orderId = generateOrderId();
+
+  useEffect(() => {
+    (async () => {
+      const res = await authApi.me();
+      if (!res.error && res.data) {
+        if (!res.data.name || res.data.name.trim() === '') {
+          setShowNamePrompt(true);
+        }
+      }
+      setMeChecked(true);
+    })();
+  }, []);
 
   return (
     <div
@@ -77,7 +97,7 @@ export default function OrderSuccessScreen() {
           Thank you for shopping with
         </p>
         <p style={{ fontSize: 15, fontWeight: 700, color: '#FF9933', marginBottom: 24 }}>
-          Shree Sai Mega Mart
+          Super Market App
         </p>
 
         {/* ── Order Info Card ── */}
@@ -144,6 +164,30 @@ export default function OrderSuccessScreen() {
 
         {/* ── Action Buttons ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Prompt for first-time name entry */}
+          {showNamePrompt && (
+            <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.06)', marginBottom: 6 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Save your name for faster checkout</p>
+              <p style={{ margin: '6px 0 10px', color: '#6b7280', fontSize: 13 }}>Enter your name to personalise your orders and receipts.</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Input value={name} onChange={(e) => setName((e.target as HTMLInputElement).value)} placeholder="Your name" />
+                <Button
+                  onClick={async () => {
+                    if (!name.trim()) return;
+                    setSavingName(true);
+                    const res = await authApi.updateProfile({ name: name.trim() });
+                    setSavingName(false);
+                    if (!res.error) setShowNamePrompt(false);
+                  }}
+                  style={{ minWidth: 110 }}
+                  disabled={savingName || !name.trim()}
+                >
+                  {savingName ? 'Saving...' : 'Save'}
+                </Button>
+                <Button variant="outline" onClick={() => setShowNamePrompt(false)} style={{ minWidth: 90 }}>Skip</Button>
+              </div>
+            </div>
+          )}
           <Button
             onClick={() => navigate('/home')}
             style={{

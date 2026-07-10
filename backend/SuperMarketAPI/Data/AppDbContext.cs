@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -101,6 +102,15 @@ public class AppDbContext : DbContext
             e.HasIndex(w => new { w.UserId, w.ProductId }).IsUnique();
             e.HasOne(w => w.User).WithMany(u => u.WishlistItems).HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(w => w.Product).WithMany(p => p.WishlistItems).HasForeignKey(w => w.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Review
+        modelBuilder.Entity<Review>(e =>
+        {
+            e.HasKey(r => r.Id);
+            e.Property(r => r.Comment).HasMaxLength(1000);
+            e.HasOne(r => r.User).WithMany(u => u.Reviews).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Product).WithMany(p => p.Reviews).HasForeignKey(r => r.ProductId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

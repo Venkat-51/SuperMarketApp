@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
             user = new User
             {
                 Phone = req.Phone,
-                Name  = req.Name ?? "Customer",
+                Name  = req.Name ?? string.Empty,
             };
             _db.Users.Add(user);
             await _db.SaveChangesAsync();

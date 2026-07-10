@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Minus, Plus, Star } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Star, Heart } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { products, categoryGallery } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { reviewsApi, wishlistApi, ApiReview } from '../../lib/api';
 
 export default function ProductDetailScreen() {
   const navigate = useNavigate();
@@ -15,8 +16,33 @@ export default function ProductDetailScreen() {
   const [selectedWeight, setSelectedWeight] = useState(0);
   const [selectedImg, setSelectedImg] = useState(0);
   const [imgFading, setImgFading] = useState(false);
+  const [reviews, setReviews] = useState<ApiReview[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   const product = products.find((p) => p.id === id);
+
+  useEffect(() => {
+    let mounted = true;
+    if (product) {
+      reviewsApi.getForProduct(product.id).then((res) => {
+        if (mounted && res.data) setReviews(res.data);
+      });
+    }
+    return () => { mounted = false; };
+  }, [product?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    wishlistApi.get().then((result) => {
+      if (!mounted || !result.data) return;
+      setWishlistIds(new Set(result.data.map((item) => String(item.productId))));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (!product) {
     return <div>Product not found</div>;
@@ -42,6 +68,37 @@ export default function ProductDetailScreen() {
   const handleAddToCart = () => {
     addToCart(product, quantity);
     navigate('/cart');
+  };
+
+  const handleToggleWishlist = async () => {
+    const productId = Number(product.id);
+    const isWishlisted = wishlistIds.has(product.id);
+
+    setWishlistIds((current) => {
+      const next = new Set(current);
+      if (isWishlisted) {
+        next.delete(product.id);
+      } else {
+        next.add(product.id);
+      }
+      return next;
+    });
+
+    const result = isWishlisted
+      ? await wishlistApi.remove(productId)
+      : await wishlistApi.add(productId);
+
+    if (result.error) {
+      setWishlistIds((current) => {
+        const next = new Set(current);
+        if (isWishlisted) {
+          next.add(product.id);
+        } else {
+          next.delete(product.id);
+        }
+        return next;
+      });
+    }
   };
 
   return (
@@ -116,12 +173,35 @@ export default function ProductDetailScreen() {
             {product.brand && (
               <p className="text-sm text-gray-500 mb-1">{product.brand}</p>
             )}
-            <h1 className="text-xl font-bold mb-2">{product.name}</h1>
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h1 className="text-xl font-bold flex-1">{product.name}</h1>
+              <button
+                type="button"
+                onClick={handleToggleWishlist}
+                aria-label={wishlistIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border"
+                style={{
+                  backgroundColor: wishlistIds.has(product.id) ? '#FFEEF2' : '#fff',
+                  color: wishlistIds.has(product.id) ? '#E11D48' : '#6b7280',
+                  borderColor: wishlistIds.has(product.id) ? '#fecdd3' : '#e5e7eb',
+                }}
+              >
+                <Heart
+                  className="w-5 h-5"
+                  fill={wishlistIds.has(product.id) ? 'currentColor' : 'none'}
+                  strokeWidth={2}
+                />
+              </button>
+            </div>
             <div className="flex items-center gap-2 mb-3">
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="text-sm font-medium">4.3</span>
-                <span className="text-sm text-gray-500">(248 reviews)</span>
+                <span className="text-sm font-medium">
+                  {reviews.length > 0
+                    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
+                    : '5.0'}
+                </span>
+                <span className="text-sm text-gray-500">({reviews.length} reviews)</span>
               </div>
             </div>
           </div>
@@ -204,6 +284,36 @@ export default function ProductDetailScreen() {
                 <span>Best Price Guarantee</span>
               </li>
             </ul>
+          </div>
+
+          {/* Customer Reviews Section */}
+          <div className="mt-4 mb-4">
+            <h3 className="font-medium mb-3">Customer Reviews</h3>
+            {reviews.length === 0 ? (
+              <p className="text-sm text-gray-500">No reviews yet. Be the first to review!</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((r) => (
+                  <div key={r.id} className="border-b border-gray-100 pb-3 last:border-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{r.userName}</span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-0.5 mb-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-3 h-3 ${s <= r.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                        />
+                      ))}
+                    </div>
+                    {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

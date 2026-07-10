@@ -11,6 +11,8 @@ import OrdersScreen from './screens/OrdersScreen';
 import OrderDetailScreen from './screens/OrderDetailScreen';
 import CategoriesScreen from './screens/CategoriesScreen';
 import AccountScreen from './screens/AccountScreen';
+import SavedAddressesScreen from './screens/SavedAddressesScreen';
+import WishlistScreen from './screens/WishlistScreen';
 
 export const router = createBrowserRouter([
   {
@@ -60,5 +62,13 @@ export const router = createBrowserRouter([
   {
     path: '/account',
     Component: AccountScreen,
+  },
+  {
+    path: '/addresses',
+    Component: SavedAddressesScreen,
+  },
+  {
+    path: '/wishlist',
+    Component: WishlistScreen,
   },
 ]);
