@@ -3,7 +3,7 @@
  * All communication with the ASP.NET Core backend at http://localhost:5000
  */
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // ── Token management ──────────────────────────────────────────────────────────
 export const tokenStore = {
