@@ -38,7 +38,7 @@ builder.Services.AddAuthorization();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:5173", "http://localhost:5174"];
+    ?? ["http://localhost:5173", "http://localhost:5174", "https://super-market-app-neon.vercel.app/"];
 
 builder.Services.AddCors(options =>
 {
