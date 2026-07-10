@@ -3,7 +3,11 @@
  * All communication with the ASP.NET Core backend at http://localhost:5000
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+// Normalize: strip trailing slash, then ensure it ends with /api
+const BASE_URL = (() => {
+  const raw = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000').replace(/\/+$/, '');
+  return raw.endsWith('/api') ? raw : `${raw}/api`;
+})();
 
 // ── Token management ──────────────────────────────────────────────────────────
 export const tokenStore = {
