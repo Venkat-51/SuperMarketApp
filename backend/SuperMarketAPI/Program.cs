@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<JwtService>();
+builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<OtpService>();
 builder.Services.AddSingleton<RazorpayService>();
 
@@ -37,13 +38,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:5173", "http://localhost:5174", "https://super-market-app-neon.vercel.app"];
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());

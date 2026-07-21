@@ -167,120 +167,120 @@ export default function HomeScreen() {
             }}
           >
 
-              {/* Banner 1 — Fresh Deals */}
-              <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
-                {/* Background photo */}
-                <img
-                  src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
-                  alt="Fresh deals"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                {/* Gradient overlay */}
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(100deg, rgba(230,115,0,0.92) 45%, rgba(230,115,0,0.3) 100%)' }}
-                />
-                {/* Content */}
-                <div className="relative h-full flex flex-col justify-between p-4">
-                  <div>
-                    <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                      🔥 Hot Offer
-                    </span>
-                    <h3 className="text-lg font-extrabold text-white leading-tight">Fresh Deals!</h3>
-                    <p className="text-xs text-orange-100 mt-0.5">Up to 30% off on staples & dairy</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/home')}
-                    className="self-start bg-white text-orange-600 text-xs font-bold px-4 py-1.5 rounded-full shadow"
-                  >
-                    Shop Now →
-                  </button>
+            {/* Banner 1 — Fresh Deals */}
+            <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
+              {/* Background photo */}
+              <img
+                src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
+                alt="Fresh deals"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Gradient overlay */}
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(100deg, rgba(230,115,0,0.92) 45%, rgba(230,115,0,0.3) 100%)' }}
+              />
+              {/* Content */}
+              <div className="relative h-full flex flex-col justify-between p-4">
+                <div>
+                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
+                    🔥 Hot Offer
+                  </span>
+                  <h3 className="text-lg font-extrabold text-white leading-tight">Fresh Deals!</h3>
+                  <p className="text-xs text-orange-100 mt-0.5">Up to 30% off on staples & dairy</p>
                 </div>
-              </Card>
+                <button
+                  onClick={() => navigate('/home')}
+                  className="self-start bg-white text-orange-600 text-xs font-bold px-4 py-1.5 rounded-full shadow"
+                >
+                  Shop Now →
+                </button>
+              </div>
+            </Card>
 
-              {/* Banner 2 — Free Delivery */}
-              <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1601598851547-4302969d0614?w=600&q=80"
-                  alt="Free delivery"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(100deg, rgba(21,101,32,0.92) 45%, rgba(21,101,32,0.3) 100%)' }}
-                />
-                <div className="relative h-full flex flex-col justify-between p-4">
-                  <div>
-                    <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                      🚚 Fast Delivery
-                    </span>
-                    <h3 className="text-lg font-extrabold text-white leading-tight">Free Delivery</h3>
-                    <p className="text-xs text-green-100 mt-0.5">On orders above ₹299</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/cart')}
-                    className="self-start bg-white text-green-700 text-xs font-bold px-4 py-1.5 rounded-full shadow"
-                  >
-                    Order Now →
-                  </button>
+            {/* Banner 2 — Free Delivery */}
+            <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
+              <img
+                src="https://images.unsplash.com/photo-1601598851547-4302969d0614?w=600&q=80"
+                alt="Free delivery"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(100deg, rgba(21,101,32,0.92) 45%, rgba(21,101,32,0.3) 100%)' }}
+              />
+              <div className="relative h-full flex flex-col justify-between p-4">
+                <div>
+                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
+                    🚚 Fast Delivery
+                  </span>
+                  <h3 className="text-lg font-extrabold text-white leading-tight">Free Delivery</h3>
+                  <p className="text-xs text-green-100 mt-0.5">On orders above ₹299</p>
                 </div>
-              </Card>
+                <button
+                  onClick={() => navigate('/cart')}
+                  className="self-start bg-white text-green-700 text-xs font-bold px-4 py-1.5 rounded-full shadow"
+                >
+                  Order Now →
+                </button>
+              </div>
+            </Card>
 
-              {/* Banner 3 — 75+ Products */}
-              <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1506617564039-2f3b650b7010?w=600&q=80"
-                  alt="Explore products"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(100deg, rgba(72,52,212,0.92) 45%, rgba(72,52,212,0.3) 100%)' }}
-                />
-                <div className="relative h-full flex flex-col justify-between p-4">
-                  <div>
-                    <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                      🛒 All Categories
-                    </span>
-                    <h3 className="text-lg font-extrabold text-white leading-tight">75+ Products</h3>
-                    <p className="text-xs text-purple-100 mt-0.5">Staples, Dairy & Beverages</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/categories')}
-                    className="self-start bg-white text-purple-700 text-xs font-bold px-4 py-1.5 rounded-full shadow"
-                  >
-                    Explore All →
-                  </button>
+            {/* Banner 3 — 125+ Products */}
+            <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
+              <img
+                src="https://images.unsplash.com/photo-1506617564039-2f3b650b7010?w=600&q=80"
+                alt="Explore products"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(100deg, rgba(72,52,212,0.92) 45%, rgba(72,52,212,0.3) 100%)' }}
+              />
+              <div className="relative h-full flex flex-col justify-between p-4">
+                <div>
+                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
+                    🛒 All Categories
+                  </span>
+                  <h3 className="text-lg font-extrabold text-white leading-tight">125+ Products</h3>
+                  <p className="text-xs text-purple-100 mt-0.5">Staples, Dairy & Beverages</p>
                 </div>
-              </Card>
+                <button
+                  onClick={() => navigate('/categories')}
+                  className="self-start bg-white text-purple-700 text-xs font-bold px-4 py-1.5 rounded-full shadow"
+                >
+                  Explore All →
+                </button>
+              </div>
+            </Card>
 
-              {/* Banner 4 — Daily Essentials */}
-              <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80"
-                  alt="Daily essentials"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(100deg, rgba(198,40,40,0.90) 45%, rgba(198,40,40,0.25) 100%)' }}
-                />
-                <div className="relative h-full flex flex-col justify-between p-4">
-                  <div>
-                    <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                      ⭐ Top Picks
-                    </span>
-                    <h3 className="text-lg font-extrabold text-white leading-tight">Daily Essentials</h3>
-                    <p className="text-xs text-red-100 mt-0.5">Dairy, snacks & beverages</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/home?category=Dairy%20%26%20Breakfast')}
-                    className="self-start bg-white text-red-600 text-xs font-bold px-4 py-1.5 rounded-full shadow"
-                  >
-                    View Offers →
-                  </button>
+            {/* Banner 4 — Daily Essentials */}
+            <Card className="w-72 h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative" style={{ scrollSnapAlign: 'start' }}>
+              <img
+                src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80"
+                alt="Daily essentials"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{ background: 'linear-gradient(100deg, rgba(198,40,40,0.90) 45%, rgba(198,40,40,0.25) 100%)' }}
+              />
+              <div className="relative h-full flex flex-col justify-between p-4">
+                <div>
+                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
+                    ⭐ Top Picks
+                  </span>
+                  <h3 className="text-lg font-extrabold text-white leading-tight">Daily Essentials</h3>
+                  <p className="text-xs text-red-100 mt-0.5">Dairy, snacks & beverages</p>
                 </div>
-              </Card>
+                <button
+                  onClick={() => navigate('/home?category=Dairy%20%26%20Breakfast')}
+                  className="self-start bg-white text-red-600 text-xs font-bold px-4 py-1.5 rounded-full shadow"
+                >
+                  View Offers →
+                </button>
+              </div>
+            </Card>
 
           </div>
         )}
@@ -317,8 +317,8 @@ export default function HomeScreen() {
             {isSearching
               ? `Results for "${searchQuery}"`
               : activeCategory === 'all'
-              ? 'All Products'
-              : activeCategory}
+                ? 'All Products'
+                : activeCategory}
           </h3>
           <span className="text-sm text-gray-500">{filteredProducts.length} items</span>
         </div>

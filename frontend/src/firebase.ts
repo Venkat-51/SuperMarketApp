@@ -1,4 +1,5 @@
-import { initializeApp } from "firebase/app";
+// Import the functions you need from the SDKs you need
+import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
@@ -17,9 +18,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const auth = getAuth(app);
+auth.useDeviceLanguage();
 const analytics = getAnalytics(app);
-// Initialize Firebase Auth and export for use in OTP flows
-export const auth = getAuth(app);
 
-export default app;
+export { auth };

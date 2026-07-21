@@ -30,7 +30,7 @@ export default function OnboardingScreen() {
 
       <div className="p-6 pb-8">
         <Button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/home')}
           className="w-full rounded-lg h-12"
           style={{ backgroundColor: '#FF9933' }}
         >

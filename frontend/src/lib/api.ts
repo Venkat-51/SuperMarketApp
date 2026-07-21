@@ -5,8 +5,11 @@
 
 // Normalize: strip trailing slash, then ensure it ends with /api
 const BASE_URL = (() => {
-  const raw = (import.meta.env.VITE_API_URL ?? 'http://localhost:5000').replace(/\/+$/, '');
-  return raw.endsWith('/api') ? raw : `${raw}/api`;
+  if (import.meta.env.VITE_API_URL) {
+    const raw = import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
+  }
+  return `http://${window.location.hostname}:5000/api`;
 })();
 
 // ── Token management ──────────────────────────────────────────────────────────
@@ -42,6 +45,9 @@ async function apiFetch<T>(
     }
 
     if (!res.ok) {
+      if (res.status === 401) {
+        tokenStore.clear();
+      }
       return {
         data: null,
         error: json?.error ?? json?.title ?? (body || `HTTP ${res.status}`),
@@ -134,15 +140,15 @@ export interface ApiReview {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
-  sendOtp: (phone: string) =>
-    apiFetch<{ message: string; otp: string }>('/auth/send-otp', {
-      method: 'POST', body: JSON.stringify({ phone }),
+  sendOtp: (email: string) =>
+    apiFetch<{ message: string }>('/auth/send-otp', {
+      method: 'POST', body: JSON.stringify({ email }),
     }),
 
-  verifyOtp: async (phone: string, otp: string, name?: string) => {
+  verifyOtp: async (email: string, otp: string, name?: string) => {
     const result = await apiFetch<{ token: string; user: ApiUser }>(
       '/auth/verify-otp',
-      { method: 'POST', body: JSON.stringify({ phone, otp, name }) }
+      { method: 'POST', body: JSON.stringify({ email, otp, name }) }
     );
     if (result.data?.token) tokenStore.set(result.data.token);
     return result;

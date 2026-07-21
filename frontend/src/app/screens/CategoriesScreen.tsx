@@ -4,23 +4,23 @@ import BottomNav from '../components/BottomNav';
 import { categories } from '../data/products';
 
 const categoryColors: Record<string, { bg: string; text: string; emoji: string }> = {
-  'Staples':         { bg: '#FFF3E0', text: '#E65100', emoji: '🌾' },
+  'Staples': { bg: '#FFF3E0', text: '#E65100', emoji: '🌾' },
   'Dairy & Breakfast': { bg: '#E3F2FD', text: '#1565C0', emoji: '🥛' },
-  'Beverages':       { bg: '#E8F5E9', text: '#2E7D32', emoji: '☕' },
-  'Fruits & Veg':    { bg: '#F3E5F5', text: '#6A1B9A', emoji: '🥬' },
-  'Snacks':          { bg: '#FFF8E1', text: '#F57F17', emoji: '🍿' },
-  'Personal Care':   { bg: '#FCE4EC', text: '#880E4F', emoji: '🧴' },
-  'Household':       { bg: '#E0F2F1', text: '#004D40', emoji: '🧹' },
+  'Beverages': { bg: '#E8F5E9', text: '#2E7D32', emoji: '☕' },
+  'Fruits & Veg': { bg: '#F3E5F5', text: '#6A1B9A', emoji: '🥬' },
+  'Snacks': { bg: '#FFF8E1', text: '#F57F17', emoji: '🍿' },
+  'Personal Care': { bg: '#FCE4EC', text: '#880E4F', emoji: '🧴' },
+  'Household': { bg: '#E0F2F1', text: '#004D40', emoji: '🧹' },
 };
 
 const featuredCategories = [
-  { id: 'Staples',           name: 'Staples',         desc: 'Rice, dal, oil & more',      count: '25 items' },
-  { id: 'Dairy & Breakfast', name: 'Dairy',           desc: 'Milk, paneer, bread & more',  count: '25 items' },
-  { id: 'Beverages',         name: 'Beverages',       desc: 'Tea, coffee, juice & more',   count: '25 items' },
-  { id: 'Fruits & Veg',      name: 'Fruits & Veg',   desc: 'Fresh produce daily',          count: 'Coming soon' },
-  { id: 'Snacks',            name: 'Snacks',          desc: 'Chips, biscuits & more',      count: 'Coming soon' },
-  { id: 'Personal Care',     name: 'Personal Care',  desc: 'Soap, shampoo & more',         count: 'Coming soon' },
-  { id: 'Household',         name: 'Household',      desc: 'Cleaners, tools & more',       count: 'Coming soon' },
+  { id: 'Staples', name: 'Staples', desc: 'Rice, dal, oil & more', count: '25 items' },
+  { id: 'Dairy & Breakfast', name: 'Dairy', desc: 'Milk, paneer, bread & more', count: '25 items' },
+  { id: 'Beverages', name: 'Beverages', desc: 'Tea, coffee, juice & more', count: '25 items' },
+  { id: 'Fruits & Veg', name: 'Fruits & Veg', desc: 'Fresh produce daily', count: 'Coming soon' },
+  { id: 'Snacks', name: 'Snacks', desc: 'Chips, biscuits & more', count: 'Coming soon' },
+  { id: 'Personal Care', name: 'Personal Care', desc: 'Soap, shampoo & more', count: 'Coming soon' },
+  { id: 'Household', name: 'Household', desc: 'Cleaners, tools & more', count: 'Coming soon' },
 ];
 
 export default function CategoriesScreen() {
@@ -46,8 +46,8 @@ export default function CategoriesScreen() {
           style={{ background: 'linear-gradient(135deg, #FF9933 0%, #e07b00 100%)' }}
         >
           <div>
-            <p className="text-white font-bold text-lg leading-tight">75+ Products</p>
-            <p className="text-orange-100 text-sm mt-1">Across 3 active categories</p>
+            <p className="text-white font-bold text-lg leading-tight">125+ Products</p>
+            <p className="text-orange-100 text-sm mt-1">Across 7 active categories</p>
           </div>
           <span className="text-5xl">🛒</span>
         </div>

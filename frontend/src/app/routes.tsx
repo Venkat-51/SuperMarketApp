@@ -1,7 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
-import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import ProductDetailScreen from './screens/ProductDetailScreen';
 import CartScreen from './screens/CartScreen';
@@ -22,10 +21,6 @@ export const router = createBrowserRouter([
   {
     path: '/onboarding',
     Component: OnboardingScreen,
-  },
-  {
-    path: '/login',
-    Component: LoginScreen,
   },
   {
     path: '/home',

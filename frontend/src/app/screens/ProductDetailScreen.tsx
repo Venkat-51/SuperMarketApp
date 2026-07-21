@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Minus, Plus, Star, Heart } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { products, categoryGallery } from '../data/products';
+import { products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { reviewsApi, wishlistApi, ApiReview } from '../../lib/api';
@@ -48,10 +48,18 @@ export default function ProductDetailScreen() {
     return <div>Product not found</div>;
   }
 
-  // Build gallery: product's own image + 2 unique alternates from category pool
-  const pool = categoryGallery[product.category] ?? [];
-  const alternates = pool.filter((img) => img !== product.image).slice(0, 2);
-  const gallery = [product.image, ...alternates];
+  // Build gallery using real alternate images if provided, else CSS-crop fallback
+  const hasRealImages = product.images && product.images.length >= 3;
+  const gallery = hasRealImages
+    ? [product.image, product.images![1], product.images![2]]
+    : [product.image, product.image, product.image];
+
+  // CSS transforms for fallback (3 × same image, different crop/zoom)
+  const galleryTransforms = [
+    { objectPosition: 'center center', transform: 'scale(1)' },
+    { objectPosition: 'center top',    transform: 'scale(1.18)' },
+    { objectPosition: 'center bottom', transform: 'scale(1.18)' },
+  ];
 
   const handleSelectImg = (idx: number) => {
     if (idx === selectedImg) return;
@@ -127,6 +135,11 @@ export default function ProductDetailScreen() {
               src={gallery[selectedImg]}
               alt={product.name}
               className="w-full h-full object-cover rounded-xl"
+              style={hasRealImages ? {} : {
+                objectPosition: galleryTransforms[selectedImg].objectPosition,
+                transform: galleryTransforms[selectedImg].transform,
+                transition: 'object-position 0.18s ease, transform 0.18s ease',
+              }}
             />
           </div>
 
@@ -161,6 +174,10 @@ export default function ProductDetailScreen() {
                   src={img}
                   alt={`${product.name} view ${idx + 1}`}
                   className="w-full h-full object-cover"
+                  style={hasRealImages ? {} : {
+                    objectPosition: galleryTransforms[idx].objectPosition,
+                    transform: galleryTransforms[idx].transform,
+                  }}
                 />
               </button>
             ))}

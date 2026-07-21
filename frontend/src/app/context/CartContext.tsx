@@ -5,6 +5,7 @@ export interface Product {
   name: string;
   brand?: string;
   image: string;
+  images?: string[];  // [front, back, side] alternate views
   price: number;
   mrp: number;
   weight: string;

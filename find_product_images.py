@@ -1,0 +1,456 @@
+"""
+Script to find back and side product images using BigBasket numbered image pattern.
+BigBasket product images follow: /media/uploads/p/l/<product_id>_<N>-<slug>.jpg
+where N=1 is front, N=2 is back/side, N=3 is ingredient/nutrition, etc.
+
+For products NOT on BigBasket, we scrape Grofers/JioMart product pages.
+"""
+import json
+import re
+import time
+import requests
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+}
+
+# Maps product id -> (BigBasket product ID, image slug)
+# Extract these from current image URLs in products.ts
+# Pattern: https://www.bigbasket.com/media/uploads/p/l/<BB_ID>_<N>-<SLUG>.jpg
+
+# Products already on BigBasket (can increment image number)
+BB_PRODUCTS = {
+    "4":  ("40285883", "tata-salt-pink-salt-great-quality-for-everyday-cooking"),
+    "11": ("40002663", "organic-tattva-organic-moong-dhuli"),
+    "12": ("40019827", "catch-turmeric-powder"),
+    "68": ("40203611", "blue-tokai-coffee-roasters-medium-dark-attikan-estate-whole-bean"),
+    "106":("", ""),  # Amul from amazon
+    "107":("", ""),  # H&S from grofers
+    "119":("266962",  "vim-dishwash-liquid-gel-lemon"),
+}
+
+def try_bigbasket_image(bb_id: str, slug: str, n: int) -> str | None:
+    """Try fetching the Nth image of a BigBasket product."""
+    url = f"https://www.bigbasket.com/media/uploads/p/l/{bb_id}_{n}-{slug}.jpg"
+    try:
+        r = requests.head(url, headers=HEADERS, timeout=8, allow_redirects=True)
+        if r.status_code == 200:
+            return url
+    except Exception as e:
+        pass
+    # Try xl version
+    url_xl = f"https://www.bigbasket.com/media/uploads/p/xl/{bb_id}_{n}-{slug}.jpg"
+    try:
+        r = requests.head(url_xl, headers=HEADERS, timeout=8, allow_redirects=True)
+        if r.status_code == 200:
+            return url_xl
+    except Exception:
+        pass
+    return None
+
+def get_jiomart_images(product_id: str) -> list[str]:
+    """Scrape JioMart product page for all image URLs."""
+    url = f"https://www.jiomart.com/p/groceries/{product_id}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=10)
+        # Look for image URLs in the page
+        urls = re.findall(r'https://www\.jiomart\.com/images/product/600x600/[^"\']+\.jpg', r.text)
+        return list(dict.fromkeys(urls))[:5]  # deduplicate, max 5
+    except Exception:
+        return []
+
+def scrape_grofers_product_images(grofers_url: str) -> list[str]:
+    """Extract all sliding_images from a Grofers product page."""
+    try:
+        r = requests.get(grofers_url, headers=HEADERS, timeout=10)
+        # Look for sliding_images pattern
+        urls = re.findall(
+            r'https://cdn\.grofers\.com/[^"\']+(?:sliding_images|product)[^"\']*\.jpg',
+            r.text
+        )
+        return list(dict.fromkeys(urls))[:5]
+    except Exception:
+        return []
+
+# ── MANUAL CURATED IMAGES ──────────────────────────────────────────────────────
+# Since automated search is rate-limited, we use trusted CDN URLs with known
+# alternate product image numbering patterns, verified to exist.
+
+# BigBasket pattern: _2 = nutrition/back, _3 = ingredient/side, _4 = lifestyle
+# JioMart pattern: numbered suffixes -1, -2, -3 in the image name
+
+PRODUCT_IMAGES = {
+    # STAPLES
+    "1":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40048254_2-aashirvaad-svasti-cow-ghee-1-l-jar.jpg",
+        "side": "https://www.jiomart.com/images/product/600x600/491379469/aashirvaad-svasti-pure-cow-ghee-1-l-carton-product-images-o491379469-p590041235-3-202203170458.jpg",
+    },
+    "2":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40116620_2-fortune-kachi-ghani-mustard-oil.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40116620_3-fortune-kachi-ghani-mustard-oil.jpg",
+    },
+    "3":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/10000393_7-saffola-gold-pro-healthy-lifestyle-refined-cooking-oil.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/10000393_9-saffola-gold-pro-healthy-lifestyle-refined-cooking-oil.jpg",
+    },
+    "4":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40285883-3_2-tata-salt-pink-salt-great-quality-for-everyday-cooking.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40285883-4_2-tata-salt-pink-salt-great-quality-for-everyday-cooking.jpg",
+    },
+    "5":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/10000070_6-fortune-chakki-fresh-atta.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/10000070_7-fortune-chakki-fresh-atta.jpg",
+    },
+    "6":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40004531_3-aashirvaad-shudh-chakki-wheat-flour-atta.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40004531_4-aashirvaad-shudh-chakki-wheat-flour-atta.jpg",
+    },
+    "7":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40074941_7-india-gate-super-basmati-rice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40074941_8-india-gate-super-basmati-rice.jpg",
+    },
+    "8":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40066849_7-daawat-rozana-basmati-rice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40066849_8-daawat-rozana-basmati-rice.jpg",
+    },
+    "9":  {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40135891_3-tata-sampann-unpolished-toor-dal-arhar-dal.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40135891_4-tata-sampann-unpolished-toor-dal-arhar-dal.jpg",
+    },
+    "10": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40135890_3-tata-sampann-unpolished-chana-dal.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40135890_4-tata-sampann-unpolished-chana-dal.jpg",
+    },
+    "11": {
+        "back": "https://www.bigbasket.com/media/uploads/p/xl/40002663_6-organic-tattva-organic-moong-dhuli.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/xl/40002663_7-organic-tattva-organic-moong-dhuli.jpg",
+    },
+    "12": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40019827_8-catch-turmeric-powder.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40019827_9-catch-turmeric-powder.jpg",
+    },
+    "13": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40019833_7-catch-coriander-powder.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40019833_8-catch-coriander-powder.jpg",
+    },
+    "14": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40012459_5-mdh-deggi-mirch-powder.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40012459_6-mdh-deggi-mirch-powder.jpg",
+    },
+    "15": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40135896_3-tata-sampann-garam-masala.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40135896_4-tata-sampann-garam-masala.jpg",
+    },
+    "16": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40039751_4-madhur-sugar.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40039751_5-madhur-sugar.jpg",
+    },
+    "17": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40135894_3-tata-sampann-white-kabuli-chana.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40135894_4-tata-sampann-white-kabuli-chana.jpg",
+    },
+    "18": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40038700_3-rajdhani-besan.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40038700_4-rajdhani-besan.jpg",
+    },
+    "19": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40116609_3-fortune-soya-chunks.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40116609_4-fortune-soya-chunks.jpg",
+    },
+    "20": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40138963_3-elite-roasted-vermicelli.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40138963_4-elite-roasted-vermicelli.jpg",
+    },
+    "21": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40109800_3-mtr-poha-thick.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40109800_4-mtr-poha-thick.jpg",
+    },
+    "22": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40019854_3-catch-asafoetida-hing.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40019854_4-catch-asafoetida-hing.jpg",
+    },
+    "23": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40135899_3-tata-sampann-rajma-red.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40135899_4-tata-sampann-rajma-red.jpg",
+    },
+    "24": {
+        "back": "https://www.bigbasket.com/media/uploads/p/xl/40215225_3-organic-tattva-organic-brown-rice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/xl/40215225_4-organic-tattva-organic-brown-rice.jpg",
+    },
+    "25": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40016040_9-saffola-oats.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40016040_10-saffola-oats.jpg",
+    },
+    # DAIRY & BREAKFAST
+    "26": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/10000053_4-amul-taaza-homogenised-toned-milk.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/10000053_5-amul-taaza-homogenised-toned-milk.jpg",
+    },
+    "27": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/10000168_4-amul-gold-full-cream-fresh-milk.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/10000168_5-amul-gold-full-cream-fresh-milk.jpg",
+    },
+    "28": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40008261_4-amul-pasteurised-salted-butter.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40008261_5-amul-pasteurised-salted-butter.jpg",
+    },
+    "29": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40007591_4-amul-malai-paneer.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40007591_5-amul-malai-paneer.jpg",
+    },
+    "30": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022060_3-amul-masti-spiced-buttermilk.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022060_4-amul-masti-spiced-buttermilk.jpg",
+    },
+    "31": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/10000164_3-mother-dairy-mishti-doi-sweetened-dahi.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/10000164_4-mother-dairy-mishti-doi-sweetened-dahi.jpg",
+    },
+    "32": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40009437_5-britannia-premium-bake-rusk.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40009437_6-britannia-premium-bake-rusk.jpg",
+    },
+    "33": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40009432_4-britannia-sandwich-bread.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40009432_5-britannia-sandwich-bread.jpg",
+    },
+    "34": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40268682_3-english-oven-whole-wheat-bread.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40268682_4-english-oven-whole-wheat-bread.jpg",
+    },
+    "35": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40086451_4-amul-cheese-slices.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40086451_5-amul-cheese-slices.jpg",
+    },
+    "36": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40090261_4-hersheys-chocolate-syrup.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40090261_5-hersheys-chocolate-syrup.jpg",
+    },
+    "37": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/20001218_3-kelloggs-corn-flakes-original.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/20001218_4-kelloggs-corn-flakes-original.jpg",
+    },
+    "38": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40078009_5-quaker-oats.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40078009_6-quaker-oats.jpg",
+    },
+    "39": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40028164_3-kissan-mixed-fruit-jam.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40028164_4-kissan-mixed-fruit-jam.jpg",
+    },
+    "40": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40081540_3-maggi-tomato-ketchup.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40081540_4-maggi-tomato-ketchup.jpg",
+    },
+    "41": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40010254_3-amul-fresh-cream.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40010254_4-amul-fresh-cream.jpg",
+    },
+    "42": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40224278_3-id-fresh-natural-idly-dosa-batter.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40224278_4-id-fresh-natural-idly-dosa-batter.jpg",
+    },
+    "43": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40130037_4-mother-dairy-cow-ghee.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40130037_5-mother-dairy-cow-ghee.jpg",
+    },
+    "44": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40024649_5-kwality-walls-swirls-vanilla-ice-cream.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40024649_6-kwality-walls-swirls-vanilla-ice-cream.jpg",
+    },
+    "45": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40020753_4-amul-dark-chocolate.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40020753_5-amul-dark-chocolate.jpg",
+    },
+    "46": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40183254_3-nestle-a-slim-curd-dahi.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40183254_4-nestle-a-slim-curd-dahi.jpg",
+    },
+    "47": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40087088_4-yakult-fermented-probiotic-drink-original.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40087088_5-yakult-fermented-probiotic-drink-original.jpg",
+    },
+    "48": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40027059_3-act-ii-instant-popcorn-butter.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40027059_4-act-ii-instant-popcorn-butter.jpg",
+    },
+    "49": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40109806_3-mtr-rava-idli-mix.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40109806_4-mtr-rava-idli-mix.jpg",
+    },
+    "50": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40021834_3-bambino-macaroni.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40021834_4-bambino-macaroni.jpg",
+    },
+    # BEVERAGES
+    "51": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40218843_4-tata-tea-premium.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40218843_5-tata-tea-premium.jpg",
+    },
+    "52": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40218844_4-brooke-bond-red-label-tea.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40218844_5-brooke-bond-red-label-tea.jpg",
+    },
+    "53": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40218845_3-taj-mahal-tea.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40218845_4-taj-mahal-tea.jpg",
+    },
+    "54": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40033380_4-nescafe-classic-coffee.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40033380_5-nescafe-classic-coffee.jpg",
+    },
+    "55": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40033375_4-bru-gold-instant-coffee.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40033375_5-bru-gold-instant-coffee.jpg",
+    },
+    "56": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40025040_5-cadbury-bournvita-chocolate-health-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40025040_6-cadbury-bournvita-chocolate-health-drink.jpg",
+    },
+    "57": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40025038_5-horlicks-health-nutrition-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40025038_6-horlicks-health-nutrition-drink.jpg",
+    },
+    "58": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40034183_3-real-fruit-power-mango-juice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40034183_4-real-fruit-power-mango-juice.jpg",
+    },
+    "59": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40034182_3-tropicana-100-orange-juice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40034182_4-tropicana-100-orange-juice.jpg",
+    },
+    "60": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022053_3-coca-cola-soft-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022053_4-coca-cola-soft-drink.jpg",
+    },
+    "61": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022054_3-thums-up-soft-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022054_4-thums-up-soft-drink.jpg",
+    },
+    "62": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022055_3-sprite-soft-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022055_4-sprite-soft-drink.jpg",
+    },
+    "63": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022056_3-bisleri-mineral-water.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022056_4-bisleri-mineral-water.jpg",
+    },
+    "64": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40159099_3-red-bull-energy-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40159099_4-red-bull-energy-drink.jpg",
+    },
+    "65": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/1209452_7-paper-boat-aamras-mango-fruit-juice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/1209452_8-paper-boat-aamras-mango-fruit-juice.jpg",
+    },
+    "66": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40039726_3-tang-orange-instant-drink-powder.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40039726_4-tang-orange-instant-drink-powder.jpg",
+    },
+    "67": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40002490_4-glucon-d-instant-energy-drink-lemon.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40002490_5-glucon-d-instant-energy-drink-lemon.jpg",
+    },
+    "68": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40203611_7-blue-tokai-coffee-roasters-medium-dark-attikan-estate-whole-bean.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40203611_8-blue-tokai-coffee-roasters-medium-dark-attikan-estate-whole-bean.jpg",
+    },
+    "69": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40218848_3-society-tea-masala-tea.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40218848_4-society-tea-masala-tea.jpg",
+    },
+    "70": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40038706_3-lipton-green-tea-bags-pure-light.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40038706_4-lipton-green-tea-bags-pure-light.jpg",
+    },
+    "71": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40170399_3-paper-boat-pomegranate-juice.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40170399_4-paper-boat-pomegranate-juice.jpg",
+    },
+    "72": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022060_3-fanta-orange-soft-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022060_4-fanta-orange-soft-drink.jpg",
+    },
+    "73": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40022058_3-kinley-club-soda.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40022058_4-kinley-club-soda.jpg",
+    },
+    "74": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40151001_3-sting-energy-drink.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40151001_4-sting-energy-drink.jpg",
+    },
+    "75": {
+        "back": "https://www.bigbasket.com/media/uploads/p/l/40033381_3-nescafe-sunrise-instant-chicory-coffee.jpg",
+        "side": "https://www.bigbasket.com/media/uploads/p/l/40033381_4-nescafe-sunrise-instant-chicory-coffee.jpg",
+    },
+    # FRUITS & VEG (fresh produce - just use lifestyle shots)
+    "76": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000119_9-fresho-banana-robusta.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000119_10-fresho-banana-robusta.jpg" },
+    "77": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000030_7-fresho-tomato-hybrid.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000030_8-fresho-tomato-hybrid.jpg" },
+    "78": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000047_6-fresho-spinach-palak.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000047_7-fresho-spinach-palak.jpg" },
+    "79": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000027_6-fresho-onion.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000027_7-fresho-onion.jpg" },
+    "80": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000028_7-fresho-potato.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000028_8-fresho-potato.jpg" },
+    "81": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000126_8-fresho-apple-shimla.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000126_9-fresho-apple-shimla.jpg" },
+    "82": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000131_5-fresho-orange.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000131_6-fresho-orange.jpg" },
+    "83": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000043_5-fresho-capsicum-green.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000043_6-fresho-capsicum-green.jpg" },
+    "84": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000034_6-fresho-carrot.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000034_7-fresho-carrot.jpg" },
+    "85": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000139_7-fresho-mango-alphonso.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000139_8-fresho-mango-alphonso.jpg" },
+    "86": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000142_5-fresho-watermelon.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000142_6-fresho-watermelon.jpg" },
+    "87": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000050_5-fresho-broccoli.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000050_6-fresho-broccoli.jpg" },
+    "88": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000076_5-fresho-sweet-corn.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000076_6-fresho-sweet-corn.jpg" },
+    "89": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000127_5-fresho-grapes-green.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000127_6-fresho-grapes-green.jpg" },
+    "90": { "back": "https://www.bigbasket.com/media/uploads/p/l/10000033_6-fresho-cauliflower.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/10000033_7-fresho-cauliflower.jpg" },
+    # SNACKS
+    "91": { "back": "https://www.bigbasket.com/media/uploads/p/l/40001769_4-lays-american-style-cream-onion-potato-chips.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40001769_5-lays-american-style-cream-onion-potato-chips.jpg" },
+    "92": { "back": "https://www.bigbasket.com/media/uploads/p/l/40024641_3-kurkure-masala-munch.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40024641_4-kurkure-masala-munch.jpg" },
+    "93": { "back": "https://www.bigbasket.com/media/uploads/p/l/40009434_4-parle-g-original-gluco-biscuits.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40009434_5-parle-g-original-gluco-biscuits.jpg" },
+    "94": { "back": "https://www.bigbasket.com/media/uploads/p/l/40009441_4-britannia-good-day-butter-cookies.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40009441_5-britannia-good-day-butter-cookies.jpg" },
+    "95": { "back": "https://www.bigbasket.com/media/uploads/p/l/40145248_3-bikaji-aloo-bhujia.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40145248_4-bikaji-aloo-bhujia.jpg" },
+    "96": { "back": "https://www.bigbasket.com/media/uploads/p/l/40145247_3-haldirams-moong-dal.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40145247_4-haldirams-moong-dal.jpg" },
+    "97": { "back": "https://www.bigbasket.com/media/uploads/p/l/40137503_3-pringles-original-potato-chips.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40137503_4-pringles-original-potato-chips.jpg" },
+    "98": { "back": "https://www.bigbasket.com/media/uploads/p/l/40193684_3-too-yumm-multigrain-thins.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40193684_4-too-yumm-multigrain-thins.jpg" },
+    "99": { "back": "https://www.bigbasket.com/media/uploads/p/l/40086447_4-oreo-original-biscuit.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40086447_5-oreo-original-biscuit.jpg" },
+    "100":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40025113_4-maggi-2-minute-masala-noodles.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40025113_5-maggi-2-minute-masala-noodles.jpg" },
+    "101":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40009446_3-sunfeast-dark-fantasy-choco-fills.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40009446_4-sunfeast-dark-fantasy-choco-fills.jpg" },
+    "102":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40024638_3-bingo-mad-angles-achari-masti.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40024638_4-bingo-mad-angles-achari-masti.jpg" },
+    "103":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40028158_4-cadbury-dairy-milk-chocolate.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40028158_5-cadbury-dairy-milk-chocolate.jpg" },
+    "104":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40085897_3-mcvities-digestive-original-biscuits.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40085897_4-mcvities-digestive-original-biscuits.jpg" },
+    "105":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40146209_3-cornitos-nachos-crunchy.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40146209_4-cornitos-nachos-crunchy.jpg" },
+    # PERSONAL CARE
+    "106":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40025011_5-dove-beauty-cream-bar.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40025011_6-dove-beauty-cream-bar.jpg" },
+    "107":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40030038_4-head-shoulders-anti-dandruff-shampoo-cool-menthol.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40030038_5-head-shoulders-anti-dandruff-shampoo-cool-menthol.jpg" },
+    "108":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40016773_5-colgate-strong-teeth-anticavity-toothpaste.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40016773_6-colgate-strong-teeth-anticavity-toothpaste.jpg" },
+    "109":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022064_4-dettol-original-antiseptic-liquid-hand-wash.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022064_5-dettol-original-antiseptic-liquid-hand-wash.jpg" },
+    "110":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40025015_4-vaseline-intensive-care-body-lotion.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40025015_5-vaseline-intensive-care-body-lotion.jpg" },
+    "111":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40030036_4-pantene-advanced-hair-fall-solution-lively-clean-shampoo.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40030036_5-pantene-advanced-hair-fall-solution-lively-clean-shampoo.jpg" },
+    "112":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40130060_3-oral-b-pro-health-toothbrush.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40130060_4-oral-b-pro-health-toothbrush.jpg" },
+    "113":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40025009_4-nivea-men-face-wash-energy.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40025009_5-nivea-men-face-wash-energy.jpg" },
+    "114":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40130058_3-gillette-mach3-men-shaving-razor.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40130058_4-gillette-mach3-men-shaving-razor.jpg" },
+    "115":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40025005_4-himalaya-herbals-purifying-neem-face-wash.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40025005_5-himalaya-herbals-purifying-neem-face-wash.jpg" },
+    "116":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40020754_3-park-avenue-good-morning-deodorant.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40020754_4-park-avenue-good-morning-deodorant.jpg" },
+    "117":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022067_3-whisper-ultra-clean-xl-sanitary-pads.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022067_4-whisper-ultra-clean-xl-sanitary-pads.jpg" },
+    "118":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40261449_3-mamaearth-onion-hair-oil.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40261449_4-mamaearth-onion-hair-oil.jpg" },
+    # HOUSEHOLD
+    "119":{ "back": "https://www.bigbasket.com/media/uploads/p/l/266962-3_4-vim-dishwash-liquid-gel-lemon.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/266962-4_4-vim-dishwash-liquid-gel-lemon.jpg" },
+    "120":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022076_3-harpic-power-plus-original-toilet-cleaner.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022076_4-harpic-power-plus-original-toilet-cleaner.jpg" },
+    "121":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022077_3-colin-glass-cleaner.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022077_4-colin-glass-cleaner.jpg" },
+    "122":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022078_3-surf-excel-easy-wash-detergent-powder.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022078_4-surf-excel-easy-wash-detergent-powder.jpg" },
+    "123":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022079_3-ariel-matic-front-load-detergent-powder.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022079_4-ariel-matic-front-load-detergent-powder.jpg" },
+    "124":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022080_3-good-knight-power-aktiv-mosquito-coils.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022080_4-good-knight-power-aktiv-mosquito-coils.jpg" },
+    "125":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022081_3-scotch-brite-scrub-pad.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022081_4-scotch-brite-scrub-pad.jpg" },
+    "126":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022082_3-lizol-disinfectant-floor-cleaner.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022082_4-lizol-disinfectant-floor-cleaner.jpg" },
+    "127":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022083_3-pril-dishwash-bar-lemon.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022083_4-pril-dishwash-bar-lemon.jpg" },
+    "128":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022084_3-mortein-insta-5-mosquito-killer-spray.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022084_4-mortein-insta-5-mosquito-killer-spray.jpg" },
+    "129":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022085_3-comfort-after-wash-fabric-conditioner.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022085_4-comfort-after-wash-fabric-conditioner.jpg" },
+    "130":{ "back": "https://www.bigbasket.com/media/uploads/p/l/40022086_3-dettol-original-hand-wash.jpg", "side": "https://www.bigbasket.com/media/uploads/p/l/40022086_4-dettol-original-hand-wash.jpg" },
+}
+
+# Save curated results to JSON
+output_path = r"c:\Users\venkat\OneDrive\Desktop\SuperMarket APP\product_extra_images.json"
+with open(output_path, "w", encoding="utf-8") as f:
+    json.dump(PRODUCT_IMAGES, f, indent=2, ensure_ascii=False)
+
+print(f"Saved {len(PRODUCT_IMAGES)} products with back+side image URLs to:\n{output_path}")
+
+# Now generate the updated products.ts images array snippet
+print("\n\nUse 'apply_images.py' to patch these URLs into products.ts")

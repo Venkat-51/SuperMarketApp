@@ -22,29 +22,37 @@ public class AuthController : ControllerBase
         _otp = otp;
     }
 
-    /// <summary>POST /api/auth/send-otp — Send OTP to phone</summary>
+    /// <summary>POST /api/auth/send-otp — Send OTP to email address</summary>
     [HttpPost("send-otp")]
-    public IActionResult SendOtp([FromBody] SendOtpRequest req)
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest req)
     {
-        var generatedOtp = _otp.GenerateAndStore(req.Phone);
-        // In production: send SMS. For dev, return in response.
-        return Ok(new { message = "OTP sent successfully.", otp = generatedOtp }); // Remove otp field in prod!
+        try
+        {
+            await _otp.GenerateAndSendAsync(req.Email);
+            return Ok(new { message = "OTP sent successfully." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to send OTP: {ex.Message}" });
+        }
     }
 
     /// <summary>POST /api/auth/verify-otp — Verify OTP and return JWT</summary>
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req)
     {
-        if (!_otp.Verify(req.Phone, req.Otp))
+        if (!_otp.Verify(req.Email, req.Otp))
             return BadRequest(new { error = "Invalid or expired OTP." });
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Phone == req.Phone);
+        var email = req.Email.ToLowerInvariant();
+        var user  = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user is null)
         {
             // Auto-register new user
             user = new User
             {
-                Phone = req.Phone,
+                Email = email,
+                Phone = string.Empty,
                 Name  = req.Name ?? string.Empty,
             };
             _db.Users.Add(user);
@@ -80,8 +88,8 @@ public class AuthController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user is null) return NotFound();
 
-        user.Name = req.Name.Trim();
-        user.Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim();
+        user.Name  = req.Name.Trim();
+        user.Email = string.IsNullOrWhiteSpace(req.Email) ? user.Email : req.Email.Trim();
 
         await _db.SaveChangesAsync();
         return Ok(ToUserDto(user));
