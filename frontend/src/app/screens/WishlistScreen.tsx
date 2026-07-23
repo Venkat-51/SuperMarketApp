@@ -5,6 +5,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { useCart } from '../context/CartContext';
+import { products } from '../data/products';
 import { wishlistApi, type ApiProduct } from '../../lib/api';
 
 type WishlistItem = {
@@ -82,27 +83,32 @@ export default function WishlistScreen() {
 
       <div className="px-4 pt-4 space-y-3">
         {loading && <p className="text-sm text-gray-500">Loading wishlist...</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        {!loading && items.length === 0 && !error && (
+        {!loading && items.length === 0 && (
           <Card className="rounded-2xl border border-gray-100 bg-white p-6 text-center">
             <div className="w-14 h-14 mx-auto rounded-full bg-pink-50 flex items-center justify-center mb-3">
               <Heart className="w-7 h-7 text-pink-500" fill="currentColor" />
             </div>
-            <p className="font-semibold text-gray-900">Your wishlist is empty</p>
-            <p className="text-sm text-gray-500 mt-1">Tap the heart on a product to save it here.</p>
+            <p className="font-semibold text-gray-900">
+              {error ? 'Please log in to view your wishlist' : 'Your wishlist is empty'}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {error ? 'Log in with your email & OTP to view your saved items.' : 'Tap the heart on a product to save it here.'}
+            </p>
             <Button
-              onClick={() => navigate('/home')}
+              onClick={() => navigate(error ? '/login' : '/home', { state: error ? { from: '/wishlist' } : undefined })}
               className="mt-4 rounded-lg"
               style={{ backgroundColor: '#FF9933' }}
             >
-              Browse products
+              {error ? 'Log In / Register' : 'Browse products'}
             </Button>
           </Card>
         )}
 
         {items.map((item) => {
           const product = item.product;
+          const localProd = products.find(p => String(p.id) === String(product.id) || p.name.toLowerCase() === product.name.toLowerCase());
+          const displayImage = localProd?.image || product.imageUrl;
+
           const discount = product.mrp > product.price
             ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
             : 0;
@@ -118,7 +124,7 @@ export default function WishlistScreen() {
               >
                 <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-50">
                   <ImageWithFallback
-                    src={product.imageUrl}
+                    src={displayImage}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />

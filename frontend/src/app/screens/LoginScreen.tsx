@@ -1,177 +1,240 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '../components/ui/input-otp';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../../lib/api';
-
-const RESEND_COOLDOWN = 60;
 
 export default function LoginScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Form Fields
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+
+  // States
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [otpSuccess, setOtpSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-  const startCountdown = () => {
-    setCountdown(RESEND_COOLDOWN);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) { clearInterval(timerRef.current!); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleGetOTP = async () => {
-    if (!isValidEmail) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
-    setOtpSuccess(false);
-    setIsSendingOtp(true);
-    try {
-      const result = await authApi.sendOtp(email);
-      if (result.error) { setError(result.error); return; }
-      setIsOtpSent(true);
-      setOtp('');
-      setOtpSuccess(true);
-      startCountdown();
-    } finally {
-      setIsSendingOtp(false);
+
+    if (!isValidEmail) {
+      setError('Please enter a valid email address.');
+      return;
     }
-  };
 
-  const handleVerifyOTP = async () => {
-    if (!isValidEmail || otp.length !== 6) return;
-    setError('');
-    setOtpSuccess(false);
-    setIsVerifyingOtp(true);
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (mode === 'register' && name.trim().length < 2) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const result = await authApi.verifyOtp(email, otp);
-      if (result.error) { setError(result.error); return; }
-      navigate('/home');
+      if (mode === 'login') {
+        const result = await authApi.login(email.trim(), password);
+        if (result.error || !result.data) {
+          setError(result.error ?? 'Failed to log in. Please check your credentials.');
+          return;
+        }
+      } else {
+        const result = await authApi.register(name.trim(), email.trim(), password, phone.trim());
+        if (result.error || !result.data) {
+          setError(result.error ?? 'Failed to create account.');
+          return;
+        }
+      }
+
+      const from = (location.state as any)?.from || '/home';
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
-      setIsVerifyingOtp(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen bg-white flex flex-col">
-      <div className="p-4">
-        <button onClick={() => navigate(-1)} className="p-2">
-          <ArrowLeft className="w-6 h-6" />
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
+      {/* ── Top Bar ── */}
+      <div className="p-4 flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+        >
+          <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
       </div>
 
-      <div className="flex-1 px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome to</h1>
-          <h2 className="text-3xl font-bold" style={{ color: '#FF9933' }}>
+      {/* ── Main Container ── */}
+      <div className="flex-1 flex flex-col justify-center px-6 max-w-md w-full mx-auto pb-10">
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+            Welcome to
+          </h1>
+          <h2 className="text-3xl font-extrabold" style={{ color: '#FF9933' }}>
             Super Market App
           </h2>
-          <p className="text-gray-600 mt-3">
-            Enter your email address to get started
+          <p className="text-gray-500 text-sm mt-2">
+            {mode === 'login'
+              ? 'Sign in with your email and password'
+              : 'Create a new account to start shopping'}
           </p>
         </div>
 
-        <div className="space-y-4">
-          {/* Email input */}
+        {/* ── Mode Toggle Tabs ── */}
+        <div className="bg-gray-200 p-1 rounded-xl flex mb-6">
+          <button
+            type="button"
+            onClick={() => { setMode('login'); setError(''); }}
+            className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+              mode === 'login'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('register'); setError(''); }}
+            className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+              mode === 'register'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* ── Auth Form ── */}
+        <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+                <Input
+                  type="text"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl text-sm"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium mb-2">Email Address</label>
-            <div className="flex gap-2">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
-                <Mail className="w-5 h-5 text-gray-500" />
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Mail className="w-4 h-4 text-gray-400" />
               </div>
               <Input
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value.trim())}
-                className="flex-1 h-12 bg-gray-100 border-gray-200 rounded-lg"
-                disabled={isOtpSent}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl text-sm"
+                required
               />
             </div>
           </div>
 
-          {/* Step 1 — Send OTP */}
-          {!isOtpSent ? (
-            <Button
-              onClick={handleGetOTP}
-              disabled={!isValidEmail || isSendingOtp}
-              className="w-full h-12 rounded-lg mt-6"
-              style={{ backgroundColor: '#FF9933' }}
-            >
-              {isSendingOtp ? 'Sending OTP...' : 'Get OTP'}
-            </Button>
-          ) : (
-            /* Step 2 — Enter & verify OTP */
-            <div className="space-y-4 pt-2">
-              <div>
-                <label className="block text-sm font-medium mb-2">Enter OTP</label>
-                <p className="text-xs text-gray-500 mb-3">
-                  Check your inbox at <strong>{email}</strong>
-                </p>
-                <InputOTP
-                  value={otp}
-                  onChange={setOtp}
-                  maxLength={6}
-                  containerClassName="justify-start"
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                </div>
+                <Input
+                  type="tel"
+                  placeholder="9876543210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl text-sm"
+                />
               </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleGetOTP}
-                  disabled={isSendingOtp || countdown > 0}
-                  className="h-12 rounded-lg flex-1"
-                >
-                  {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
-                </Button>
-                <Button
-                  onClick={handleVerifyOTP}
-                  disabled={otp.length !== 6 || isVerifyingOtp}
-                  className="h-12 rounded-lg flex-1"
-                  style={{ backgroundColor: '#FF9933' }}
-                >
-                  {isVerifyingOtp ? 'Verifying...' : 'Verify & Login'}
-                </Button>
-              </div>
-
-              {otpSuccess && (
-                <p className="text-sm font-medium text-green-600">
-                  ✓ OTP sent successfully. Check your email!
-                </p>
-              )}
             </div>
           )}
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              Password <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-xl text-sm"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
 
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </p>
-        </div>
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium">
+              ⚠️ {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-12 rounded-xl text-sm font-bold mt-2 text-white shadow-md transition-all"
+            style={{
+              backgroundColor: '#FF9933',
+              boxShadow: '0 4px 14px rgba(255, 153, 51, 0.4)',
+            }}
+          >
+            {isLoading
+              ? mode === 'login' ? 'Signing In...' : 'Creating Account...'
+              : mode === 'login' ? 'Sign In' : 'Create Account'}
+          </Button>
+        </form>
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="p-6 text-center text-xs text-gray-400">
+        By continuing, you agree to our Terms of Service &amp; Privacy Policy
       </div>
     </div>
   );

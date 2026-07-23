@@ -126,9 +126,10 @@ public static class DataSeeder
         {
             db.Users.Add(new User
             {
-                Name  = "Venkat Kumar",
-                Phone = "9999999999",
-                Email = "venkat@example.com",
+                Name         = "Venkat Kumar",
+                Phone        = "9999999999",
+                Email        = "venkat@example.com",
+                PasswordHash = Services.PasswordHasher.Hash("password123"),
             });
             db.SaveChanges();
 
@@ -136,15 +137,28 @@ public static class DataSeeder
             var user = db.Users.First();
             db.Addresses.Add(new Address
             {
-                UserId   = user.Id,
-                Label    = "Home",
-                Line1    = "45, Anna Nagar West Extension",
-                City     = "Chennai",
-                State    = "Tamil Nadu",
-                Pincode  = "600101",
+                UserId    = user.Id,
+                Label     = "Home",
+                Line1     = "45, Anna Nagar West Extension",
+                City      = "Chennai",
+                State     = "Tamil Nadu",
+                Pincode   = "600101",
                 IsDefault = true,
             });
             db.SaveChanges();
+        }
+        else
+        {
+            // Backfill password for any existing users without a PasswordHash
+            var usersWithoutPassword = db.Users.Where(u => string.IsNullOrEmpty(u.PasswordHash)).ToList();
+            if (usersWithoutPassword.Any())
+            {
+                foreach (var u in usersWithoutPassword)
+                {
+                    u.PasswordHash = Services.PasswordHasher.Hash("password123");
+                }
+                db.SaveChanges();
+            }
         }
     }
 }

@@ -13,50 +13,55 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly JwtService _jwt;
-    private readonly OtpService _otp;
 
-    public AuthController(AppDbContext db, JwtService jwt, OtpService otp)
+    public AuthController(AppDbContext db, JwtService jwt)
     {
         _db  = db;
         _jwt = jwt;
-        _otp = otp;
     }
 
-    /// <summary>POST /api/auth/send-otp — Send OTP to email address</summary>
-    [HttpPost("send-otp")]
-    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest req)
+    /// <summary>POST /api/auth/register — Create a new user account with Email & Password</summary>
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest req)
     {
-        try
+        var email = req.Email.Trim().ToLowerInvariant();
+
+        var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (existingUser != null)
         {
-            await _otp.GenerateAndSendAsync(req.Email);
-            return Ok(new { message = "OTP sent successfully." });
+            return BadRequest(new { error = "An account with this email address already exists. Please log in." });
         }
-        catch (Exception ex)
+
+        var user = new User
         {
-            return StatusCode(500, new { error = $"Failed to send OTP: {ex.Message}" });
-        }
+            Name         = req.Name.Trim(),
+            Email        = email,
+            Phone        = req.Phone?.Trim() ?? string.Empty,
+            PasswordHash = PasswordHasher.Hash(req.Password),
+        };
+
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        var token = _jwt.GenerateToken(user);
+        return Ok(new AuthResponse(token, ToUserDto(user)));
     }
 
-    /// <summary>POST /api/auth/verify-otp — Verify OTP and return JWT</summary>
-    [HttpPost("verify-otp")]
-    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req)
+    /// <summary>POST /api/auth/login — Authenticate user with Email & Password</summary>
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        if (!_otp.Verify(req.Email, req.Otp))
-            return BadRequest(new { error = "Invalid or expired OTP." });
+        var email = req.Email.Trim().ToLowerInvariant();
 
-        var email = req.Email.ToLowerInvariant();
-        var user  = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user is null)
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null)
         {
-            // Auto-register new user
-            user = new User
-            {
-                Email = email,
-                Phone = string.Empty,
-                Name  = req.Name ?? string.Empty,
-            };
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+            return BadRequest(new { error = "No account found with this email address. Please register." });
+        }
+
+        if (!PasswordHasher.Verify(req.Password, user.PasswordHash))
+        {
+            return BadRequest(new { error = "Invalid password. Please check your password and try again." });
         }
 
         var token = _jwt.GenerateToken(user);
@@ -89,7 +94,7 @@ public class AuthController : ControllerBase
         if (user is null) return NotFound();
 
         user.Name  = req.Name.Trim();
-        user.Email = string.IsNullOrWhiteSpace(req.Email) ? user.Email : req.Email.Trim();
+        user.Email = string.IsNullOrWhiteSpace(req.Email) ? user.Email : req.Email.Trim().ToLowerInvariant();
 
         await _db.SaveChangesAsync();
         return Ok(ToUserDto(user));

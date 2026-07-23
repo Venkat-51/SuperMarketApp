@@ -3,12 +3,13 @@ using System.ComponentModel.DataAnnotations;
 namespace SuperMarketAPI.DTOs;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
-public record SendOtpRequest([Required, EmailAddress] string Email);
+public record LoginRequest([Required, EmailAddress] string Email, [Required] string Password);
 
-public record VerifyOtpRequest(
+public record RegisterRequest(
+    [Required, StringLength(80, MinimumLength = 2)] string Name,
     [Required, EmailAddress] string Email,
-    [Required, StringLength(6, MinimumLength = 6)] string Otp,
-    string? Name
+    [Required, StringLength(100, MinimumLength = 6)] string Password,
+    string? Phone
 );
 
 public record AuthResponse(string Token, UserDto User);

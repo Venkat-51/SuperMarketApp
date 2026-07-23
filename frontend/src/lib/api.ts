@@ -47,6 +47,10 @@ async function apiFetch<T>(
     if (!res.ok) {
       if (res.status === 401) {
         tokenStore.clear();
+        return {
+          data: null,
+          error: json?.error ?? 'Please log in to continue.',
+        };
       }
       return {
         data: null,
@@ -140,15 +144,19 @@ export interface ApiReview {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
-  sendOtp: (email: string) =>
-    apiFetch<{ message: string }>('/auth/send-otp', {
-      method: 'POST', body: JSON.stringify({ email }),
-    }),
-
-  verifyOtp: async (email: string, otp: string, name?: string) => {
+  login: async (email: string, password: string) => {
     const result = await apiFetch<{ token: string; user: ApiUser }>(
-      '/auth/verify-otp',
-      { method: 'POST', body: JSON.stringify({ email, otp, name }) }
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ email, password }) }
+    );
+    if (result.data?.token) tokenStore.set(result.data.token);
+    return result;
+  },
+
+  register: async (name: string, email: string, password: string, phone?: string) => {
+    const result = await apiFetch<{ token: string; user: ApiUser }>(
+      '/auth/register',
+      { method: 'POST', body: JSON.stringify({ name, email, password, phone }) }
     );
     if (result.data?.token) tokenStore.set(result.data.token);
     return result;

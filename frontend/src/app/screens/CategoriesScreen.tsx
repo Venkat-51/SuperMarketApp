@@ -15,12 +15,12 @@ const categoryColors: Record<string, { bg: string; text: string; emoji: string }
 
 const featuredCategories = [
   { id: 'Staples', name: 'Staples', desc: 'Rice, dal, oil & more', count: '25 items' },
-  { id: 'Dairy & Breakfast', name: 'Dairy', desc: 'Milk, paneer, bread & more', count: '25 items' },
+  { id: 'Dairy & Breakfast', name: 'Dairy & Breakfast', desc: 'Milk, paneer, bread & more', count: '25 items' },
   { id: 'Beverages', name: 'Beverages', desc: 'Tea, coffee, juice & more', count: '25 items' },
-  { id: 'Fruits & Veg', name: 'Fruits & Veg', desc: 'Fresh produce daily', count: 'Coming soon' },
-  { id: 'Snacks', name: 'Snacks', desc: 'Chips, biscuits & more', count: 'Coming soon' },
-  { id: 'Personal Care', name: 'Personal Care', desc: 'Soap, shampoo & more', count: 'Coming soon' },
-  { id: 'Household', name: 'Household', desc: 'Cleaners, tools & more', count: 'Coming soon' },
+  { id: 'Fruits & Veg', name: 'Fruits & Veg', desc: 'Fresh produce daily', count: '15 items' },
+  { id: 'Snacks', name: 'Snacks', desc: 'Chips, biscuits & more', count: '15 items' },
+  { id: 'Personal Care', name: 'Personal Care', desc: 'Soap, shampoo & more', count: '13 items' },
+  { id: 'Household', name: 'Household', desc: 'Cleaners, tools & more', count: '12 items' },
 ];
 
 export default function CategoriesScreen() {
@@ -56,16 +56,13 @@ export default function CategoriesScreen() {
         <div className="space-y-3">
           {featuredCategories.map((cat) => {
             const style = categoryColors[cat.id] ?? { bg: '#F5F5F5', text: '#333', emoji: '📦' };
-            const isAvailable = !cat.count.includes('soon');
 
             return (
               <button
                 key={cat.id}
-                onClick={() => isAvailable && handleCategory(cat.id)}
-                className="w-full flex items-center gap-4 bg-white rounded-2xl p-4 border border-gray-100 transition-all text-left"
+                onClick={() => handleCategory(cat.id)}
+                className="w-full flex items-center gap-4 bg-white rounded-2xl p-4 border border-gray-100 transition-all text-left hover:border-orange-200 active:scale-[0.99]"
                 style={{
-                  opacity: isAvailable ? 1 : 0.6,
-                  cursor: isAvailable ? 'pointer' : 'default',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                 }}
               >
@@ -84,8 +81,8 @@ export default function CategoriesScreen() {
                   <span
                     className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full"
                     style={{
-                      backgroundColor: isAvailable ? style.bg : '#F3F4F6',
-                      color: isAvailable ? style.text : '#9CA3AF',
+                      backgroundColor: style.bg,
+                      color: style.text,
                     }}
                   >
                     {cat.count}
@@ -93,9 +90,7 @@ export default function CategoriesScreen() {
                 </div>
 
                 {/* Arrow */}
-                {isAvailable && (
-                  <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                )}
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </button>
             );
           })}

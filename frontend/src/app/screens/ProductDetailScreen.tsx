@@ -22,6 +22,16 @@ export default function ProductDetailScreen() {
   const product = products.find((p) => p.id === id);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    const scrollables = document.querySelectorAll('*');
+    scrollables.forEach((el) => {
+      if (el.scrollTop > 0) {
+        el.scrollTop = 0;
+      }
+    });
+  }, [id]);
+
+  useEffect(() => {
     let mounted = true;
     if (product) {
       reviewsApi.getForProduct(product.id).then((res) => {

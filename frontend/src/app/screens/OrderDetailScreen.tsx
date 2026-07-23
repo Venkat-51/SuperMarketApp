@@ -38,6 +38,8 @@ export default function OrderDetailScreen() {
   if (error) return <div className="p-4 text-red-600">{error}</div>;
   if (!order) return <div className="p-4">Order not found.</div>;
 
+  const itemSubtotal = order.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-6">
       <div className="flex items-center justify-between mb-4">
@@ -101,15 +103,17 @@ export default function OrderDetailScreen() {
       <Card className="p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600">Subtotal</div>
-          <div className="font-medium">₹{order.total.toFixed(2)}</div>
+          <div className="font-medium">₹{itemSubtotal.toFixed(2)}</div>
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-sm text-gray-600">Delivery</div>
-          <div className="font-medium">₹{order.deliveryFee.toFixed(2)}</div>
+          <div className="font-medium" style={{ color: order.deliveryFee === 0 ? '#16a34a' : 'inherit' }}>
+            {order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee.toFixed(2)}`}
+          </div>
         </div>
-        <div className="flex items-center justify-between mt-3 border-t pt-3">
-          <div className="text-sm text-gray-700">Total</div>
-          <div className="font-semibold">₹{(order.total + order.deliveryFee).toFixed(2)}</div>
+        <div className="flex items-center justify-between mt-3 border-t pt-3 font-bold">
+          <div className="text-sm text-gray-900">Total</div>
+          <div className="text-base text-gray-900">₹{order.total.toFixed(2)}</div>
         </div>
       </Card>
 

@@ -23,8 +23,21 @@ export default function HomeScreen() {
   // Pre-select category from URL query param (e.g. from CategoriesScreen)
   useEffect(() => {
     const cat = searchParams.get('category');
-    if (cat) setActiveCategory(cat);
+    if (cat) {
+      setActiveCategory(cat);
+    } else {
+      setActiveCategory('all');
+    }
   }, [searchParams]);
+
+  const handleSelectCategory = (catId: string) => {
+    setActiveCategory(catId);
+    if (catId === 'all') {
+      navigate('/home', { replace: true });
+    } else {
+      navigate(`/home?category=${encodeURIComponent(catId)}`, { replace: true });
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -294,7 +307,7 @@ export default function HomeScreen() {
                 return (
                   <button
                     key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
+                    onClick={() => handleSelectCategory(cat.id)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border"
                     style={{
                       backgroundColor: isActive ? '#FF9933' : '#F9F9F9',

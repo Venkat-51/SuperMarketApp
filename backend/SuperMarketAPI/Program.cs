@@ -14,8 +14,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<JwtService>();
-builder.Services.AddSingleton<EmailService>();
-builder.Services.AddSingleton<OtpService>();
 builder.Services.AddSingleton<RazorpayService>();
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────────
@@ -86,8 +84,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();   // Create DB + run migrations
-    DataSeeder.Seed(db);     // Seed products, categories, coupons, demo user
+    db.Database.EnsureCreated(); // Ensure DB tables + indexes match models
+    DataSeeder.Seed(db);         // Seed products, categories, coupons, demo user
 }
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Separator } from '../components/ui/separator';
 import { useCart } from '../context/CartContext';
-import { addressesApi, paymentsApi, ordersApi, authApi, type ApiAddress } from '../../lib/api';
+import { addressesApi, paymentsApi, ordersApi, authApi, tokenStore, type ApiAddress } from '../../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 type PaymentMethod = 'cod' | 'razorpay';
@@ -165,9 +165,18 @@ export default function CheckoutScreen() {
 
     setNameError('');
 
+    if (!tokenStore.get()) {
+      navigate('/login', { state: { from: '/checkout' } });
+      return false;
+    }
+
     if (trimmedName !== savedName) {
       const result = await authApi.updateProfile({ name: trimmedName });
       if (result.error || !result.data) {
+        if (result.error?.includes('log in') || result.error?.includes('401')) {
+          navigate('/login', { state: { from: '/checkout' } });
+          return false;
+        }
         setErrorMsg(result.error ?? 'Unable to save your name.');
         return false;
       }
@@ -176,7 +185,7 @@ export default function CheckoutScreen() {
     }
 
     return true;
-  }, [name, savedName]);
+  }, [name, navigate, savedName]);
 
   // ── Handle COD ──────────────────────────────────────────────────────────────
   const handleCOD = useCallback(async () => {
@@ -464,6 +473,33 @@ export default function CheckoutScreen() {
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
+
+        {!tokenStore.get() && (
+          <div
+            style={{
+              background: '#FFF5EB',
+              border: '1.5px solid #FF9933',
+              borderRadius: 14,
+              padding: '14px 16px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}
+          >
+            <div>
+              <p style={{ fontWeight: 700, fontSize: 13, color: '#111', margin: 0 }}>You are not logged in</p>
+              <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>Login via OTP to place your order</p>
+            </div>
+            <Button
+              onClick={() => navigate('/login', { state: { from: '/checkout' } })}
+              style={{ backgroundColor: '#FF9933', color: '#fff', fontSize: 12, height: 36, padding: '0 14px', borderRadius: 8 }}
+            >
+              Login / Register
+            </Button>
+          </div>
+        )}
 
         {/* ── Name Section ── */}
         <section style={{ marginBottom: 16 }}>

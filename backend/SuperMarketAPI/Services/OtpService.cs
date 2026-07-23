@@ -11,10 +11,12 @@ public class OtpService
     private static readonly object _lock = new();
 
     private readonly EmailService _email;
+    private readonly ILogger<OtpService> _logger;
 
-    public OtpService(EmailService email)
+    public OtpService(EmailService email, ILogger<OtpService> logger)
     {
-        _email = email;
+        _email  = email;
+        _logger = logger;
     }
 
     /// <summary>Generates a 6-digit OTP, stores it and sends it to the given email.</summary>
@@ -25,7 +27,19 @@ public class OtpService
         {
             _store[emailAddress.ToLowerInvariant()] = (otp, DateTime.UtcNow.AddMinutes(10));
         }
-        await _email.SendOtpAsync(emailAddress, otp);
+
+        _logger.LogInformation("==========================================");
+        _logger.LogInformation("GENERATED OTP FOR {Email}: {Otp}", emailAddress, otp);
+        _logger.LogInformation("==========================================");
+
+        try
+        {
+            await _email.SendOtpAsync(emailAddress, otp);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Email delivery failed for {Email}: {Error}. Use logged OTP {Otp}", emailAddress, ex.Message, otp);
+        }
     }
 
     /// <summary>Returns true if the OTP is valid and not expired, then removes it.</summary>
