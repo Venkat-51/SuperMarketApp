@@ -14,6 +14,8 @@ import AccountScreen from './screens/AccountScreen';
 import SavedAddressesScreen from './screens/SavedAddressesScreen';
 import WishlistScreen from './screens/WishlistScreen';
 import LoginScreen from './screens/LoginScreen';
+import DesktopHeader from './components/DesktopHeader';
+import DesktopFooter from './components/DesktopFooter';
 
 function RootLayout() {
   const { pathname } = useLocation();
@@ -31,7 +33,17 @@ function RootLayout() {
     });
   }, [pathname]);
 
-  return <Outlet />;
+  const isStandalone = pathname === '/' || pathname === '/onboarding';
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white lg:bg-gray-50/50">
+      {!isStandalone && <DesktopHeader />}
+      <main className="flex-1 w-full">
+        <Outlet />
+      </main>
+      {!isStandalone && <DesktopFooter />}
+    </div>
+  );
 }
 
 export const router = createBrowserRouter([

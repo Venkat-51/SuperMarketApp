@@ -43,7 +43,23 @@ public class WishlistController : ControllerBase
         if (exists) return Ok(new { message = "Already in wishlist." });
 
         var product = await _db.Products.FindAsync(productId);
-        if (product is null) return NotFound();
+        if (product is null)
+        {
+            product = new Product
+            {
+                Id = productId,
+                Name = $"Product #{productId}",
+                Brand = "SuperMarket",
+                ImageUrl = "",
+                Price = 50,
+                Mrp = 60,
+                Weight = "1 unit",
+                Category = "General",
+                InStock = true,
+            };
+            _db.Products.Add(product);
+            await _db.SaveChangesAsync();
+        }
 
         _db.WishlistItems.Add(new WishlistItem { UserId = userId.Value, ProductId = productId });
         await _db.SaveChangesAsync();

@@ -4,7 +4,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { Star } from 'lucide-react';
+import { Star, Package, ArrowLeft, CheckCircle2, Clock, MapPin, CreditCard } from 'lucide-react';
 import { ordersApi, reviewsApi, ApiOrder, ApiOrderItem } from '../../lib/api';
 
 export default function OrderDetailScreen() {
@@ -34,144 +34,199 @@ export default function OrderDetailScreen() {
     return () => { mounted = false; };
   }, [id]);
 
-  if (loading) return <div className="p-4">Loading order...</div>;
-  if (error) return <div className="p-4 text-red-600">{error}</div>;
-  if (!order) return <div className="p-4">Order not found.</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500 font-semibold">Loading order details...</div>;
+  if (error) return <div className="p-8 text-center text-rose-600 font-semibold">{error}</div>;
+  if (!order) return <div className="p-8 text-center text-gray-500 font-semibold">Order not found.</div>;
 
   const itemSubtotal = order.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
 
+  const handleOpenReview = (item: ApiOrderItem) => {
+    setReviewingItem(item);
+    setReviewRating(5);
+    setReviewComment('');
+    setReviewError('');
+    setReviewSuccess('');
+  };
+
+  const handleSaveReview = async () => {
+    if (!reviewingItem) return;
+    setSubmittingReview(true);
+    setReviewError('');
+    setReviewSuccess('');
+
+    const res = await reviewsApi.submit({
+      productId: reviewingItem.productId,
+      orderId: order.id,
+      rating: reviewRating,
+      comment: reviewComment,
+    });
+
+    setSubmittingReview(false);
+
+    if (res.error) {
+      setReviewError(res.error);
+    } else {
+      setReviewSuccess('Thank you! Review submitted.');
+      setTimeout(() => {
+        setReviewingItem(null);
+      }, 1000);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 px-4 pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Order #{order.id}</h2>
-        <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
-      </div>
-
-      <Card className="p-4 mb-3">
-        <p className="text-sm text-gray-500">Placed: {new Date(order.createdAt).toLocaleString()}</p>
-        <p className="mt-2 font-medium">Status: <span className="font-semibold">{order.status}</span></p>
-        <p className="mt-2">Payment: {order.paymentMethod}{order.paymentId ? ` · ${order.paymentId}` : ''}</p>
-      </Card>
-
-      <Card className="p-4 mb-3">
-        <h3 className="font-medium mb-2">Delivery Address</h3>
-        {order.address ? (
-          <div className="text-sm text-gray-700">
-            <div className="font-medium">{order.address.label}</div>
-            <div>{order.address.line1}</div>
-            <div>{order.address.city}, {order.address.state} · {order.address.pincode}</div>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">No address available</p>
-        )}
-      </Card>
-
-      <Card className="p-4 mb-3">
-        <h3 className="font-medium mb-2">Items</h3>
-        <div className="space-y-3">
-          {order.items.map((it) => (
-            <div key={it.productId} className="flex flex-col gap-2 border-b last:border-0 pb-3 last:pb-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{it.productName}</div>
-                  <div className="text-xs text-gray-500">{it.weight} · Qty {it.quantity}</div>
-                </div>
-                <div className="text-right">
-                  <div>₹{(it.price * it.quantity).toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">₹{it.price.toFixed(2)} each</div>
-                </div>
-              </div>
-              {order.status === 'Delivered' && (
-                <button
-                  onClick={() => {
-                    setReviewingItem(it);
-                    setReviewRating(5);
-                    setReviewComment('');
-                    setReviewError('');
-                    setReviewSuccess('');
-                  }}
-                  className="text-xs text-[#FF9933] font-medium self-start flex items-center gap-1"
-                >
-                  <Star className="w-3 h-3" /> Write a Review
-                </button>
-              )}
+    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-16 px-4 pt-4 lg:pt-8">
+      
+      <div className="max-w-4xl mx-auto">
+        {/* Desktop Header */}
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-100 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <div>
+              <h1 className="text-xl lg:text-2xl font-black text-gray-900">Order #{order.id}</h1>
+              <p className="text-xs text-gray-500 mt-0.5">Placed on {new Date(order.createdAt).toLocaleString()}</p>
             </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">Subtotal</div>
-          <div className="font-medium">₹{itemSubtotal.toFixed(2)}</div>
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="text-sm text-gray-600">Delivery</div>
-          <div className="font-medium" style={{ color: order.deliveryFee === 0 ? '#16a34a' : 'inherit' }}>
-            {order.deliveryFee === 0 ? 'FREE' : `₹${order.deliveryFee.toFixed(2)}`}
           </div>
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{order.status}</span>
+          </span>
         </div>
-        <div className="flex items-center justify-between mt-3 border-t pt-3 font-bold">
-          <div className="text-sm text-gray-900">Total</div>
-          <div className="text-base text-gray-900">₹{order.total.toFixed(2)}</div>
-        </div>
-      </Card>
 
-      <div className="space-y-3">
-        <Button onClick={() => navigate('/orders')}>Back to Orders</Button>
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          
+          {/* Left Column: Items */}
+          <div className="lg:col-span-7 space-y-4 mb-4 lg:mb-0">
+            <Card className="p-5 rounded-2xl border border-gray-200/80 bg-white shadow-xs">
+              <h3 className="font-bold text-gray-900 text-sm mb-4 pb-2 border-b border-gray-100 flex items-center justify-between">
+                <span>Items Ordered</span>
+                <span className="text-xs text-gray-400">{order.items.length} items</span>
+              </h3>
+
+              <div className="divide-y divide-gray-100">
+                {order.items.map((item) => (
+                  <div key={item.id} className="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700 font-bold text-sm">
+                        {item.quantity}x
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{item.productName}</p>
+                        <p className="text-xs text-gray-400">₹{item.price} per unit</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex items-center gap-3">
+                      <span className="font-bold text-gray-900 text-sm">₹{item.price * item.quantity}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenReview(item)}
+                        className="text-xs h-8 px-2.5 rounded-lg border-gray-200 hover:bg-orange-50 hover:text-orange-600"
+                      >
+                        <Star className="w-3.5 h-3.5 mr-1 fill-yellow-400 text-yellow-400" />
+                        Rate
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column: Address & Bill details */}
+          <div className="lg:col-span-5 space-y-4">
+            <Card className="p-5 rounded-2xl border border-gray-200/80 bg-white shadow-xs">
+              <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-orange-500" />
+                <span>Delivery Address</span>
+              </h3>
+              {order.address ? (
+                <div className="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                  <p className="font-bold text-gray-900 text-sm mb-1">{order.address.label}</p>
+                  <p>{order.address.line1}</p>
+                  <p>{order.address.city}, {order.address.state} - {order.address.pincode}</p>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No address recorded.</p>
+              )}
+            </Card>
+
+            <Card className="p-5 rounded-2xl border border-gray-200/80 bg-white shadow-xs">
+              <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-orange-500" />
+                <span>Payment & Bill Breakdown</span>
+              </h3>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-gray-600">
+                  <span>Item Subtotal</span>
+                  <span className="font-semibold text-gray-900">₹{itemSubtotal}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Delivery Fee</span>
+                  <span className="font-semibold text-gray-900">₹{(order.total - itemSubtotal).toFixed(2)}</span>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex justify-between font-black text-sm text-gray-900">
+                  <span>Total Paid</span>
+                  <span>₹{order.total.toFixed(2)}</span>
+                </div>
+                <p className="text-[11px] text-gray-400 pt-2 border-t border-gray-100 uppercase tracking-wider font-bold">
+                  Payment: {order.paymentMethod.toUpperCase()} {order.paymentId ? `(${order.paymentId})` : ''}
+                </p>
+              </div>
+            </Card>
+          </div>
+
+        </div>
+
       </div>
 
-      <Dialog open={!!reviewingItem} onOpenChange={(open) => !open && setReviewingItem(null)}>
-        <DialogContent className="rounded-2xl max-w-[340px]">
+      <Dialog open={Boolean(reviewingItem)} onOpenChange={(open) => !open && setReviewingItem(null)}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Write a Review</DialogTitle>
             <DialogDescription>
-              How did you like {reviewingItem?.productName}?
+              Share your rating for {reviewingItem?.productName}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 flex flex-col items-center gap-4">
-            <div className="flex gap-2">
+          <div className="space-y-4 py-2">
+            <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
-                <button key={star} onClick={() => setReviewRating(star)}>
+                <button
+                  key={star}
+                  onClick={() => setReviewRating(star)}
+                  className="p-1 hover:scale-110 transition-transform"
+                >
                   <Star
-                    className={`w-8 h-8 ${reviewRating >= star ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                    className={`w-7 h-7 ${star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
                   />
                 </button>
               ))}
             </div>
 
-            <textarea
-              className="w-full border rounded-xl p-3 text-sm min-h-[80px]"
-              placeholder="Tell us more about it (optional)"
+            <Input
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="What did you like or dislike about this item?"
+              className="h-12 rounded-xl"
             />
 
-            {reviewError && <p className="text-xs text-red-500">{reviewError}</p>}
-            {reviewSuccess && <p className="text-xs text-green-600 font-medium">{reviewSuccess}</p>}
+            {reviewError && <p className="text-xs text-rose-600 font-medium">{reviewError}</p>}
+            {reviewSuccess && <p className="text-xs text-emerald-600 font-bold">{reviewSuccess}</p>}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewingItem(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setReviewingItem(null)} className="rounded-xl">
+              Cancel
+            </Button>
             <Button
-              style={{ backgroundColor: '#FF9933' }}
-              disabled={submittingReview || !!reviewSuccess}
-              onClick={async () => {
-                if (!reviewingItem) return;
-                setSubmittingReview(true);
-                setReviewError('');
-                const res = await reviewsApi.add({
-                  productId: reviewingItem.productId,
-                  rating: reviewRating,
-                  comment: reviewComment,
-                });
-                setSubmittingReview(false);
-                if (res.error) setReviewError(res.error);
-                else setReviewSuccess('Review submitted successfully!');
-              }}
+              onClick={handleSaveReview}
+              disabled={submittingReview}
+              className="rounded-xl bg-orange-500 text-white font-bold"
             >
-              {submittingReview ? 'Submitting...' : 'Submit'}
+              {submittingReview ? 'Submitting...' : 'Submit Review'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -440,9 +440,10 @@ export default function CheckoutScreen() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f9fa', paddingBottom: 140 }}>
-      {/* ── Header ── */}
+    <div className="min-h-screen bg-[#f8f9fa] lg:bg-gray-50/50 pb-[140px] lg:pb-16">
+      {/* ── Header (Hidden on Desktop) ── */}
       <div
+        className="lg:hidden"
         style={{
           position: 'sticky',
           top: 0,
@@ -472,7 +473,21 @@ export default function CheckoutScreen() {
         <h2 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>Checkout</h2>
       </div>
 
-      <div style={{ padding: '16px 16px 0' }}>
+      <div className="px-4 pt-4 lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-8">
+        
+        {/* Desktop Title Header */}
+        <div className="hidden lg:flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-orange-500" />
+              <span>Checkout & Payment</span>
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Complete your delivery address and payment details to confirm order</p>
+          </div>
+          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+            Step 2 of 2
+          </span>
+        </div>
 
         {!tokenStore.get() && (
           <div
@@ -908,10 +923,26 @@ export default function CheckoutScreen() {
             </div>
           ))}
         </div>
+        {/* Desktop Action Button */}
+        <div className="hidden lg:block mt-6">
+          {errorMsg && (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 mb-3 text-xs text-rose-600 font-medium">
+              ⚠️ {errorMsg}
+            </div>
+          )}
+          <Button
+            onClick={handlePlaceOrder}
+            disabled={isProcessing}
+            className="w-full h-12 rounded-xl font-bold text-sm bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25 transition-all"
+          >
+            {isProcessing ? '⏳ Opening Payment...' : `Confirm & Place Order · ₹${grandTotal}`}
+          </Button>
+        </div>
       </div>
 
-      {/* ── Fixed Bottom Bar ── */}
+      {/* ── Fixed Bottom Bar (Mobile Only) ── */}
       <div
+        className="lg:hidden"
         style={{
           position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
           width: '100%', maxWidth: 448, zIndex: 30,

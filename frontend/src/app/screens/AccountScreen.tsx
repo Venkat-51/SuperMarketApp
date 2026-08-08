@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   User, MapPin, ShoppingBag, Heart, Bell, HelpCircle,
-  Shield, LogOut, ChevronRight, Star, Package, Pencil,
+  Shield, LogOut, ChevronRight, Star, Package, Pencil, ArrowRight
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -28,7 +28,7 @@ const menuSections = [
     ],
   },
   {
-    title: 'Settings',
+    title: 'Settings & Support',
     items: [
       { id: 'notifications', icon: Bell,      label: 'Notifications',   desc: 'Manage alerts & offers',   color: '#9C27B0' },
       { id: 'privacy',       icon: Shield,    label: 'Privacy & Security', desc: 'Account protection',   color: '#4CAF50' },
@@ -127,10 +127,11 @@ export default function AccountScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-16">
+      
+      {/* Mobile Top Header Banner (Hidden on Desktop) */}
       <div
-        className="px-4 pt-10 pb-6"
+        className="px-4 pt-10 pb-6 lg:hidden"
         style={{ background: 'linear-gradient(135deg, #FF9933 0%, #e07b00 100%)' }}
       >
         <div className="flex items-center gap-4 mb-4">
@@ -171,118 +172,186 @@ export default function AccountScreen() {
         </div>
       </div>
 
-      <div className="px-4 pt-6 space-y-6 pb-24">
-        {menuSections.map((section) => (
-          <div key={section.title}>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">
-              {section.title}
-            </p>
-            <Card className="rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
-              {section.items.map(({ id, icon: Icon, label, desc, color }) => (
-                <button
-                  key={id}
-                  onClick={() => {
-                    if (id === 'orders') navigate('/orders');
-                    else if (id === 'wishlist') navigate('/wishlist');
-                    else if (id === 'addresses') navigate('/addresses');
-                  }}
-                  className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors text-left"
+      <div className="px-4 pt-6 lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-8">
+        
+        {/* Desktop Title Header */}
+        <div className="hidden lg:flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <User className="w-6 h-6 text-orange-500" />
+              <span>Account & Profile</span>
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">Manage your account settings, orders, saved addresses, and wishlist</p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="text-xs font-bold text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1.5"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </Button>
+        </div>
+
+        {/* Desktop Layout Grid */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          
+          {/* Desktop Left Sidebar Profile Summary Card */}
+          <div className="hidden lg:block lg:col-span-4">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs sticky top-36">
+              <div className="text-center pb-6 border-b border-gray-100">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 text-white flex items-center justify-center mx-auto mb-4 shadow-md">
+                  <User className="w-10 h-10" />
+                </div>
+                <h2 className="text-xl font-extrabold text-gray-900">{user.name}</h2>
+                <p className="text-xs text-gray-500 mt-1">{user.email || (user.phone ? `+91 ${user.phone}` : 'Customer')}</p>
+                <Button
+                  onClick={openEditProfile}
+                  variant="outline"
+                  className="mt-4 text-xs font-bold text-orange-600 border-orange-200 hover:bg-orange-50 h-9 rounded-xl flex items-center gap-1.5 mx-auto"
                 >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
-                    style={{ backgroundColor: color + '15' }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-sm mb-0.5">{label}</p>
-                    <p className="text-xs text-gray-500">{desc}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                </button>
-              ))}
-            </Card>
-          </div>
-        ))}
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Edit Profile</span>
+                </Button>
+              </div>
 
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3.5 bg-white rounded-2xl border border-red-100 hover:bg-red-50 transition-colors text-left"
-        >
-          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-            <LogOut className="w-5 h-5 text-red-500" />
-          </div>
-          <p className="font-medium text-red-500 text-sm">Log Out</p>
-        </button>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-3 py-6 border-b border-gray-100">
+                <div className="text-center">
+                  <p className="text-lg font-black text-gray-900">{ordersCount}</p>
+                  <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Orders</p>
+                </div>
+                <div className="text-center border-x border-gray-100">
+                  <p className="text-lg font-black text-gray-900">{wishlistCount}</p>
+                  <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Saved</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-gray-900">{reviewsCount}</p>
+                  <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Reviews</p>
+                </div>
+              </div>
 
-        <p className="text-center text-xs text-gray-400 pb-2">
-          SuperMarket App - v1.0.0
-        </p>
+              <div className="pt-4 text-xs text-gray-400 space-y-2">
+                <p className="flex items-center justify-between">
+                  <span>Account Status</span>
+                  <span className="font-bold text-green-600">Active</span>
+                </p>
+                <p className="flex items-center justify-between">
+                  <span>SuperMarket Member</span>
+                  <span className="font-bold text-orange-600">Verified</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Menu Sections & Actions */}
+          <div className="lg:col-span-8 space-y-6">
+            {menuSections.map((section) => (
+              <div key={section.title}>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-2">
+                  {section.title}
+                </p>
+                <Card className="rounded-2xl border border-gray-100 lg:border-gray-200/80 overflow-hidden divide-y divide-gray-100 bg-white shadow-xs">
+                  {section.items.map(({ id, icon: Icon, label, desc, color }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        if (id === 'orders') navigate('/orders');
+                        else if (id === 'wishlist') navigate('/wishlist');
+                        else if (id === 'addresses') navigate('/addresses');
+                      }}
+                      className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-orange-50/50 transition-colors text-left group"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform"
+                        style={{ backgroundColor: color + '15' }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm mb-0.5 group-hover:text-orange-600 transition-colors">{label}</p>
+                        <p className="text-xs text-gray-500">{desc}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
+                    </button>
+                  ))}
+                </Card>
+              </div>
+            ))}
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-white hover:bg-rose-50 rounded-2xl border border-gray-200/80 text-rose-600 font-bold text-sm transition-colors lg:hidden"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+
+        </div>
+
       </div>
 
-      <BottomNav />
-
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Edit profile</DialogTitle>
+            <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>
-              Update the name and email shown on your account.
+              Update your name and email address for order notifications.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full name
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Full Name
               </label>
               <Input
                 value={profileName}
-                onChange={(event) => setProfileName(event.target.value)}
+                onChange={(e) => setProfileName(e.target.value)}
                 placeholder="Enter your name"
-                className="h-11 rounded-lg"
+                className="h-11 rounded-xl"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email address
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Email Address
               </label>
               <Input
                 type="email"
                 value={profileEmail}
-                onChange={(event) => setProfileEmail(event.target.value)}
-                placeholder="you@example.com"
-                className="h-11 rounded-lg"
+                onChange={(e) => setProfileEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="h-11 rounded-xl"
               />
             </div>
 
-            {profileError ? (
-              <p className="text-sm text-red-600">{profileError}</p>
-            ) : null}
+            {profileError && (
+              <p className="text-xs font-medium text-rose-600">{profileError}</p>
+            )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
-              type="button"
               variant="outline"
               onClick={() => setIsEditOpen(false)}
-              disabled={isSaving}
+              className="rounded-xl h-11"
             >
               Cancel
             </Button>
             <Button
-              type="button"
               onClick={saveProfile}
               disabled={isSaving}
-              style={{ backgroundColor: '#FF9933' }}
+              className="rounded-xl h-11 bg-orange-500 hover:bg-orange-600 text-white font-bold"
             >
-              {isSaving ? 'Saving...' : 'Save changes'}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BottomNav />
     </div>
   );
 }
