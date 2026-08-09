@@ -11,13 +11,12 @@ import { reviewsApi, wishlistApi, ApiReview } from '../../lib/api';
 export default function ProductDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { addToCart } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedWeight, setSelectedWeight] = useState(0);
   const [selectedImg, setSelectedImg] = useState(0);
   const [imgFading, setImgFading] = useState(false);
   const [reviews, setReviews] = useState<ApiReview[]>([]);
-  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   const product = products.find((p) => p.id === id);
 
@@ -40,19 +39,6 @@ export default function ProductDetailScreen() {
     }
     return () => { mounted = false; };
   }, [product?.id]);
-
-  useEffect(() => {
-    let mounted = true;
-
-    wishlistApi.get().then((result) => {
-      if (!mounted || !result.data) return;
-      setWishlistIds(new Set(result.data.map((item) => String(item.productId))));
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   if (!product) {
     return <div className="p-8 text-center text-gray-500 font-semibold">Product not found</div>;
@@ -89,34 +75,7 @@ export default function ProductDetailScreen() {
   };
 
   const handleToggleWishlist = async () => {
-    const productId = Number(product.id);
-    const isWishlisted = wishlistIds.has(product.id);
-
-    setWishlistIds((current) => {
-      const next = new Set(current);
-      if (isWishlisted) {
-        next.delete(product.id);
-      } else {
-        next.add(product.id);
-      }
-      return next;
-    });
-
-    const result = isWishlisted
-      ? await wishlistApi.remove(productId)
-      : await wishlistApi.add(productId);
-
-    if (result.error) {
-      setWishlistIds((current) => {
-        const next = new Set(current);
-        if (isWishlisted) {
-          next.add(product.id);
-        } else {
-          next.delete(product.id);
-        }
-        return next;
-      });
-    }
+    await toggleWishlist(product);
   };
 
   return (
@@ -225,17 +184,17 @@ export default function ProductDetailScreen() {
                 <button
                   type="button"
                   onClick={handleToggleWishlist}
-                  aria-label={wishlistIds.has(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
                   className="w-10 h-10 lg:w-12 lg:h-12 rounded-2xl flex items-center justify-center flex-shrink-0 border transition-all hover:scale-105"
                   style={{
-                    backgroundColor: wishlistIds.has(product.id) ? '#FFEEF2' : '#fff',
-                    color: wishlistIds.has(product.id) ? '#E11D48' : '#6b7280',
-                    borderColor: wishlistIds.has(product.id) ? '#fecdd3' : '#e5e7eb',
+                    backgroundColor: isInWishlist(product.id) ? '#FFEEF2' : '#fff',
+                    color: isInWishlist(product.id) ? '#E11D48' : '#6b7280',
+                    borderColor: isInWishlist(product.id) ? '#fecdd3' : '#e5e7eb',
                   }}
                 >
                   <Heart
                     className="w-5 h-5 lg:w-6 lg:h-6"
-                    fill={wishlistIds.has(product.id) ? 'currentColor' : 'none'}
+                    fill={isInWishlist(product.id) ? 'currentColor' : 'none'}
                     strokeWidth={2}
                   />
                 </button>

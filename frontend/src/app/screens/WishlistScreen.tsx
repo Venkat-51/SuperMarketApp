@@ -16,40 +16,80 @@ type WishlistItem = {
 
 export default function WishlistScreen() {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, wishlistIds, toggleWishlist, isAuthenticated } = useCart();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
-  const fetchWishlist = async () => {
-    setLoading(true);
-    const res = await wishlistApi.get();
-    if (res.error) {
-      setError(res.error);
-      setItems([]);
-    } else {
-      setItems((res.data ?? []) as WishlistItem[]);
-      setError('');
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchWishlist();
-  }, []);
+    let mounted = true;
+    const loadWishlist = async () => {
+      setLoading(true);
+      if (isAuthenticated) {
+        const res = await wishlistApi.get();
+        if (mounted) {
+          if (res.error) {
+            setError(res.error);
+            setItems([]);
+          } else {
+            setItems((res.data ?? []) as WishlistItem[]);
+            setError('');
+          }
+        }
+      } else {
+        // Guest user: construct items array from local product dataset using wishlistIds
+        const guestItems: WishlistItem[] = Array.from(wishlistIds).map(idStr => {
+          const pid = Number(idStr);
+          const found = products.find(p => p.id === idStr);
+          const apiProd: ApiProduct = found ? {
+            id: pid,
+            name: found.name,
+            brand: found.brand,
+            imageUrl: found.image,
+            price: found.price,
+            mrp: found.mrp,
+            weight: found.weight,
+            category: found.category,
+            inStock: found.inStock,
+            discountPercent: found.mrp > found.price ? Math.round(((found.mrp - found.price) / found.mrp) * 100) : 0,
+          } : {
+            id: pid,
+            name: `Product #${pid}`,
+            brand: 'SuperMarket',
+            imageUrl: '',
+            price: 50,
+            mrp: 60,
+            weight: '1 unit',
+            category: 'General',
+            inStock: true,
+            discountPercent: 0,
+          };
+
+          return {
+            productId: pid,
+            product: apiProd,
+            addedAt: new Date().toISOString(),
+          };
+        });
+
+        if (mounted) {
+          setItems(guestItems);
+          setError('');
+        }
+      }
+      if (mounted) setLoading(false);
+    };
+
+    loadWishlist();
+
+    return () => { mounted = false; };
+  }, [wishlistIds, isAuthenticated]);
 
   const handleRemove = async (productId: number) => {
     setUpdatingId(productId);
-    const res = await wishlistApi.remove(productId);
+    await toggleWishlist({ id: productId });
     setUpdatingId(null);
-
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
-
-    setItems((current) => current.filter((item) => item.productId !== productId));
   };
 
   const handleAddToCart = (product: ApiProduct) => {

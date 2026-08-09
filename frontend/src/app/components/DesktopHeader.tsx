@@ -11,10 +11,9 @@ import { wishlistApi } from '../../lib/api';
 export default function DesktopHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cart, getCartCount, getCartTotal, removeFromCart, updateQuantity } = useCart();
+  const { cart, getCartCount, getCartTotal, removeFromCart, updateQuantity, wishlistIds, user, isAuthenticated } = useCart();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [wishlistCount, setWishlistCount] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Indiranagar, Bengaluru - 560038');
   const [isLocationOpen, setIsLocationOpen] = useState(false);
@@ -22,17 +21,7 @@ export default function DesktopHeader() {
   const cartDropdownRef = useRef<HTMLDivElement>(null);
   const cartCount = getCartCount();
   const cartTotal = getCartTotal();
-
-  // Fetch wishlist count
-  useEffect(() => {
-    let mounted = true;
-    wishlistApi.get().then((res) => {
-      if (mounted && res.data) {
-        setWishlistCount(res.data.length);
-      }
-    });
-    return () => { mounted = false; };
-  }, [location.pathname]);
+  const wishlistCount = wishlistIds.size;
 
   // Handle click outside cart dropdown
   useEffect(() => {
@@ -53,11 +42,7 @@ export default function DesktopHeader() {
   };
 
   const locations = [
-    'Indiranagar, Bengaluru - 560038',
-    'Koramangala, Bengaluru - 560034',
-    'HSR Layout, Bengaluru - 560102',
-    'Whitefield, Bengaluru - 560066',
-    'Jayanagar, Bengaluru - 560041',
+    'Thiruvaiyaru, Thanjavur - 613 204',
   ];
 
   return (
@@ -285,61 +270,29 @@ export default function DesktopHeader() {
             )}
           </div>
 
-          {/* User Account Profile */}
+          {/* User Account Profile / Sign In */}
           <Link
-            to="/account"
+            to={isAuthenticated ? "/account" : "/login"}
+            state={!isAuthenticated ? { from: location.pathname } : undefined}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors border border-transparent hover:border-orange-200"
           >
             <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">
               <User className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <span className="text-[10px] uppercase font-semibold text-gray-400 block leading-tight">Account</span>
-              <span className="text-xs font-bold text-gray-800 block leading-tight">My Profile</span>
+              <span className="text-[10px] uppercase font-semibold text-gray-400 block leading-tight">
+                {isAuthenticated ? 'Account' : 'Welcome'}
+              </span>
+              <span className="text-xs font-bold text-gray-800 block leading-tight">
+                {isAuthenticated ? (user?.name || 'My Profile') : 'Sign In'}
+              </span>
             </div>
           </Link>
 
         </div>
       </div>
 
-      {/* Category Navigation Bar */}
-      <div className="bg-gray-50 border-t border-gray-200/80 px-6 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs overflow-x-auto no-scrollbar gap-4">
-          <div className="flex items-center gap-1 font-semibold text-gray-700">
-            <Link
-              to="/categories"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-xs"
-            >
-              <span>All Categories</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </Link>
-
-            {categories.slice(0, 7).map((cat) => {
-              const isActive = location.search.includes(encodeURIComponent(cat.id));
-              return (
-                <Link
-                  key={cat.id}
-                  to={`/home?category=${encodeURIComponent(cat.id)}`}
-                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-orange-100 text-orange-700 font-bold'
-                      : 'text-gray-600 hover:text-orange-600 hover:bg-white'
-                  }`}
-                >
-                  <span>{cat.icon}</span>
-                  <span>{cat.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-4 text-gray-500 font-medium whitespace-nowrap">
-            <Link to="/home?category=Staples" className="hover:text-orange-600 transition-colors">🔥 Daily Deals</Link>
-            <Link to="/home?category=Dairy%20%26%20Breakfast" className="hover:text-orange-600 transition-colors">🥛 Fresh Milk</Link>
-            <Link to="/wishlist" className="hover:text-orange-600 transition-colors">❤️ Wishlist</Link>
-          </div>
-        </div>
-      </div>
+      
     </header>
   );
 }

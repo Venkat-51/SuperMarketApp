@@ -39,12 +39,20 @@ const menuSections = [
 
 export default function AccountScreen() {
   const navigate = useNavigate();
+  const { logout, isAuthenticated } = useCart();
   const [user, setUser] = useState<ApiUser>({
     id: 0,
     name: 'Customer',
     phone: '',
     email: '',
   });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true, state: { from: '/account' } });
+    }
+  }, [isAuthenticated, navigate]);
+
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [profileName, setProfileName] = useState(user.name);
   const [profileEmail, setProfileEmail] = useState(user.email ?? '');
@@ -122,7 +130,7 @@ export default function AccountScreen() {
   };
 
   const handleLogout = () => {
-    authApi.logout();
+    logout();
     navigate('/');
   };
 

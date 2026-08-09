@@ -4,10 +4,12 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ArrowLeft, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../../lib/api';
+import { useCart } from '../context/CartContext';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUserData } = useCart();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,6 +60,8 @@ export default function LoginScreen() {
           return;
         }
       }
+
+      await refreshUserData();
 
       const from = (location.state as any)?.from || '/home';
       navigate(from, { replace: true });

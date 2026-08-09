@@ -5,13 +5,13 @@ import { useCart } from '../context/CartContext';
 export default function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { getCartCount } = useCart();
+  const { getCartCount, isAuthenticated, user } = useCart();
 
   const navItems = [
     { id: 'home',       label: 'Home',       icon: Home,         path: '/home' },
     { id: 'categories', label: 'Categories', icon: Grid3x3,      path: '/categories' },
     { id: 'cart',       label: 'Cart',       icon: ShoppingCart, path: '/cart' },
-    { id: 'account',    label: 'Account',    icon: User,         path: '/account' },
+    { id: 'account',    label: isAuthenticated ? 'Account' : 'Sign In', icon: User, path: isAuthenticated ? '/account' : '/login' },
   ];
 
   const cartCount = getCartCount();
