@@ -53,15 +53,22 @@ export default function LoginScreen() {
           setError(result.error ?? 'Failed to log in. Please check your credentials.');
           return;
         }
+
+        await refreshUserData();
+
+        if (result.data.user.role === 'Admin') {
+          navigate('/admin/dashboard', { replace: true });
+          return;
+        }
       } else {
         const result = await authApi.register(name.trim(), email.trim(), password, phone.trim());
         if (result.error || !result.data) {
           setError(result.error ?? 'Failed to create account.');
           return;
         }
-      }
 
-      await refreshUserData();
+        await refreshUserData();
+      }
 
       const from = (location.state as any)?.from || '/home';
       navigate(from, { replace: true });

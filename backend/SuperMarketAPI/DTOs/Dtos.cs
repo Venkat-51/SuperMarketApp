@@ -15,7 +15,7 @@ public record RegisterRequest(
 public record AuthResponse(string Token, UserDto User);
 
 // ── User ─────────────────────────────────────────────────────────────────────
-public record UserDto(int Id, string Name, string Phone, string? Email, DateTime CreatedAt);
+public record UserDto(int Id, string Name, string Phone, string? Email, string Role, bool IsActive, DateTime CreatedAt, DateTime? LastLoginAt);
 
 public record UpdateProfileRequest(
     [Required, StringLength(80, MinimumLength = 2)] string Name,
@@ -33,8 +33,91 @@ public record ProductDto(
     string Weight,
     string Category,
     bool InStock,
-    int DiscountPercent
+    int DiscountPercent,
+    string Sku = "",
+    string Subcategory = "",
+    string Description = "",
+    string Unit = "",
+    int StockQuantity = 50,
+    bool IsActive = true,
+    bool IsFeatured = false,
+    DateTime? CreatedAt = null
 );
+
+public record CreateProductRequest(
+    [Required] string Name,
+    string? Brand,
+    [Required] string ImageUrl,
+    [Required] decimal Price,
+    [Required] decimal Mrp,
+    string Sku,
+    string Weight,
+    [Required] string Category,
+    string Subcategory,
+    string Description,
+    string Unit,
+    int StockQuantity = 50,
+    bool InStock = true,
+    bool IsActive = true,
+    bool IsFeatured = false
+);
+
+public record UpdateProductRequest(
+    [Required] string Name,
+    string? Brand,
+    [Required] string ImageUrl,
+    [Required] decimal Price,
+    [Required] decimal Mrp,
+    string Sku,
+    string Weight,
+    [Required] string Category,
+    string Subcategory,
+    string Description,
+    string Unit,
+    int StockQuantity = 50,
+    bool InStock = true,
+    bool IsActive = true,
+    bool IsFeatured = false
+);
+
+public record BulkProductImportRow(
+    string ProductName,
+    string? Brand,
+    string? Sku,
+    string Category,
+    string? Subcategory,
+    string? Description,
+    decimal Price,
+    decimal Mrp,
+    int StockQuantity,
+    string? Unit,
+    string? Weight,
+    string? ImageUrl,
+    bool IsFeatured,
+    bool IsActive
+);
+
+public record BulkImportRequest(IEnumerable<BulkProductImportRow> Products);
+
+public record AdminOverviewStats(
+    int TotalProducts,
+    int ActiveProducts,
+    int OutOfStockProducts,
+    int TotalOrders,
+    int PendingOrders,
+    int CompletedOrders,
+    int TotalUsers,
+    int TodayOrders,
+    decimal TodayRevenue,
+    IEnumerable<CategoryDistItem> CategoryDistribution,
+    IEnumerable<SalesOverTimeItem> SalesOverTime
+);
+
+public record CategoryDistItem(string Category, int Count);
+public record SalesOverTimeItem(string Date, decimal Revenue, int Orders);
+
+public record UpdateOrderStatusRequest(string Status, string? PaymentStatus = null);
+public record UpdateUserStatusRequest(bool IsActive, string? Role = null);
 
 public record ProductListResponse(IEnumerable<ProductDto> Products, int Total, int Page, int PageSize);
 

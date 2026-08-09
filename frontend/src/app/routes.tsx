@@ -17,6 +17,17 @@ import LoginScreen from './screens/LoginScreen';
 import DesktopHeader from './components/DesktopHeader';
 import DesktopFooter from './components/DesktopFooter';
 
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+import AdminLayout from './components/AdminLayout';
+import AdminDashboardScreen from './screens/admin/AdminDashboardScreen';
+import AdminProductsScreen from './screens/admin/AdminProductsScreen';
+import AdminAddProductScreen from './screens/admin/AdminAddProductScreen';
+import AdminBulkImportScreen from './screens/admin/AdminBulkImportScreen';
+import AdminOrdersScreen from './screens/admin/AdminOrdersScreen';
+import AdminUsersScreen from './screens/admin/AdminUsersScreen';
+import AdminCategoriesScreen from './screens/admin/AdminCategoriesScreen';
+import AdminSettingsScreen from './screens/admin/AdminSettingsScreen';
+
 function RootLayout() {
   const { pathname } = useLocation();
 
@@ -33,7 +44,7 @@ function RootLayout() {
     });
   }, [pathname]);
 
-  const isStandalone = pathname === '/' || pathname === '/onboarding';
+  const isStandalone = pathname === '/' || pathname === '/onboarding' || pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen flex flex-col bg-white lg:bg-gray-50/50">
@@ -105,6 +116,26 @@ export const router = createBrowserRouter([
       {
         path: '/wishlist',
         Component: WishlistScreen,
+      },
+    ],
+  },
+  // ── Protected Admin Section ─────────────────────────────────────────────
+  {
+    element: <AdminProtectedRoute />,
+    children: [
+      {
+        element: <AdminLayout />,
+        children: [
+          { path: '/admin', Component: AdminDashboardScreen },
+          { path: '/admin/dashboard', Component: AdminDashboardScreen },
+          { path: '/admin/products', Component: AdminProductsScreen },
+          { path: '/admin/products/add', Component: AdminAddProductScreen },
+          { path: '/admin/products/import', Component: AdminBulkImportScreen },
+          { path: '/admin/orders', Component: AdminOrdersScreen },
+          { path: '/admin/users', Component: AdminUsersScreen },
+          { path: '/admin/categories', Component: AdminCategoriesScreen },
+          { path: '/admin/settings', Component: AdminSettingsScreen },
+        ],
       },
     ],
   },

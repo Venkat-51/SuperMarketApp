@@ -108,5 +108,5 @@ public class AuthController : ControllerBase
     }
 
     private static UserDto ToUserDto(User u) =>
-        new(u.Id, u.Name, u.Phone, u.Email, u.CreatedAt);
+        new(u.Id, u.Name, u.Phone, u.Email, u.Role, u.IsActive, u.CreatedAt, u.LastLoginAt);
 }

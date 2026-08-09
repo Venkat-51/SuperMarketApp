@@ -261,3 +261,120 @@ export const reviewsApi = {
   add: (payload: { productId: number; rating: number; comment?: string }) =>
     apiFetch<ApiReview>('/reviews', { method: 'POST', body: JSON.stringify(payload) }),
 };
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export interface AdminOverviewStats {
+  totalProducts: number;
+  activeProducts: number;
+  outOfStockProducts: number;
+  totalOrders: number;
+  pendingOrders: number;
+  completedOrders: number;
+  totalUsers: number;
+  todayOrders: number;
+  todayRevenue: number;
+  categoryDistribution: { category: string; count: number }[];
+  salesOverTime: { date: string; revenue: number; orders: number }[];
+}
+
+export interface AdminProductDto extends ApiProduct {
+  sku?: string;
+  subcategory?: string;
+  description?: string;
+  unit?: string;
+  stockQuantity: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  createdAt?: string;
+}
+
+export interface AdminOrderDto {
+  id: number;
+  userId: number;
+  userName: string;
+  userEmail?: string;
+  userPhone: string;
+  status: string;
+  paymentMethod: string;
+  paymentId?: string;
+  total: number;
+  deliveryFee: number;
+  createdAt: string;
+  itemsCount: number;
+  address?: ApiAddress;
+  items: ApiOrderItem[];
+}
+
+export interface AdminUserDto {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt?: string;
+  ordersCount: number;
+  totalSpent: number;
+}
+
+export const adminApi = {
+  getStats: () => apiFetch<AdminOverviewStats>('/admin/stats'),
+
+  getProducts: (params?: { search?: string; category?: string; brand?: string; stockStatus?: string; isActive?: boolean; sortBy?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.category) q.set('category', params.category);
+    if (params?.brand) q.set('brand', params.brand);
+    if (params?.stockStatus) q.set('stockStatus', params.stockStatus);
+    if (params?.isActive !== undefined) q.set('isActive', String(params.isActive));
+    if (params?.sortBy) q.set('sortBy', params.sortBy);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.pageSize) q.set('pageSize', String(params.pageSize));
+    return apiFetch<{ products: AdminProductDto[]; total: number; page: number; pageSize: number }>(`/admin/products?${q}`);
+  },
+
+  createProduct: (payload: Partial<AdminProductDto>) =>
+    apiFetch<AdminProductDto>('/admin/products', { method: 'POST', body: JSON.stringify(payload) }),
+
+  updateProduct: (id: number, payload: Partial<AdminProductDto>) =>
+    apiFetch<AdminProductDto>(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+
+  updateStock: (id: number, stockQuantity: number) =>
+    apiFetch<AdminProductDto>(`/admin/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify(stockQuantity) }),
+
+  toggleActive: (id: number) =>
+    apiFetch<AdminProductDto>(`/admin/products/${id}/toggle-active`, { method: 'PATCH' }),
+
+  deleteProduct: (id: number) =>
+    apiFetch<{ message?: string }>(`/admin/products/${id}`, { method: 'DELETE' }),
+
+  bulkImport: (products: any[]) =>
+    apiFetch<{ importedCount: number; errorCount: number; errors: string[] }>('/admin/products/bulk-import', { method: 'POST', body: JSON.stringify({ products }) }),
+
+  getOrders: (params?: { search?: string; status?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.status) q.set('status', params.status);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.pageSize) q.set('pageSize', String(params.pageSize));
+    return apiFetch<{ orders: AdminOrderDto[]; total: number; page: number; pageSize: number }>(`/admin/orders?${q}`);
+  },
+
+  updateOrderStatus: (id: number, status: string, paymentStatus?: string) =>
+    apiFetch<{ message: string; status: string }>(`/admin/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, paymentStatus }) }),
+
+  getUsers: (params?: { search?: string; page?: number; pageSize?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.pageSize) q.set('pageSize', String(params.pageSize));
+    return apiFetch<{ users: AdminUserDto[]; total: number; page: number; pageSize: number }>(`/admin/users?${q}`);
+  },
+
+  getUserDetail: (id: number) =>
+    apiFetch<AdminUserDto & { completedOrders: number; cancelledOrders: number; orders: any[] }>(`/admin/users/${id}`),
+
+  updateUserStatus: (id: number, isActive: boolean, role?: string) =>
+    apiFetch<{ message: string }>(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive, role }) }),
+};

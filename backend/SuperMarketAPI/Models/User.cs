@@ -7,7 +7,10 @@ public class User
     public string Phone { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string? PasswordHash { get; set; }
+    public string Role { get; set; } = "Customer"; // "Customer" or "Admin"
+    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastLoginAt { get; set; }
 
     // Navigation
     public ICollection<Order> Orders { get; set; } = new List<Order>();

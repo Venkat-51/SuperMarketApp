@@ -121,8 +121,32 @@ public static class DataSeeder
             db.SaveChanges();
         }
 
-        // ── Demo User ────────────────────────────────────────────────────────────
-        if (!db.Users.Any())
+        // ── Demo Users & Admin ──────────────────────────────────────────────────
+        if (!db.Users.Any(u => u.Role == "Admin"))
+        {
+            var admin = db.Users.FirstOrDefault(u => u.Email == "admin@supermarket.com");
+            if (admin == null)
+            {
+                db.Users.Add(new User
+                {
+                    Name         = "SuperMarket Admin",
+                    Phone        = "9876543210",
+                    Email        = "admin@supermarket.com",
+                    PasswordHash = Services.PasswordHasher.Hash("admin123"),
+                    Role         = "Admin",
+                    IsActive     = true,
+                    CreatedAt    = DateTime.UtcNow,
+                });
+                db.SaveChanges();
+            }
+            else
+            {
+                admin.Role = "Admin";
+                db.SaveChanges();
+            }
+        }
+
+        if (!db.Users.Any(u => u.Role == "Customer"))
         {
             db.Users.Add(new User
             {
@@ -130,11 +154,14 @@ public static class DataSeeder
                 Phone        = "9999999999",
                 Email        = "venkat@example.com",
                 PasswordHash = Services.PasswordHasher.Hash("password123"),
+                Role         = "Customer",
+                IsActive     = true,
+                CreatedAt    = DateTime.UtcNow,
             });
             db.SaveChanges();
 
             // Demo address for the demo user
-            var user = db.Users.First();
+            var user = db.Users.First(u => u.Email == "venkat@example.com");
             db.Addresses.Add(new Address
             {
                 UserId    = user.Id,
@@ -149,16 +176,20 @@ public static class DataSeeder
         }
         else
         {
-            // Backfill password for any existing users without a PasswordHash
-            var usersWithoutPassword = db.Users.Where(u => string.IsNullOrEmpty(u.PasswordHash)).ToList();
-            if (usersWithoutPassword.Any())
+            // Backfill password/role for any existing users
+            var usersWithoutRole = db.Users.Where(u => string.IsNullOrEmpty(u.Role)).ToList();
+            foreach (var u in usersWithoutRole)
             {
-                foreach (var u in usersWithoutPassword)
-                {
-                    u.PasswordHash = Services.PasswordHasher.Hash("password123");
-                }
-                db.SaveChanges();
+                u.Role = "Customer";
             }
+
+            var usersWithoutPassword = db.Users.Where(u => string.IsNullOrEmpty(u.PasswordHash)).ToList();
+            foreach (var u in usersWithoutPassword)
+            {
+                u.PasswordHash = Services.PasswordHasher.Hash("password123");
+            }
+
+            db.SaveChanges();
         }
     }
 }

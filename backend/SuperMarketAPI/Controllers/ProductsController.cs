@@ -67,6 +67,8 @@ public class ProductsController : ControllerBase
 
     private static ProductDto ToDto(Product p) => new(
         p.Id, p.Name, p.Brand, p.ImageUrl, p.Price, p.Mrp, p.Weight, p.Category, p.InStock,
-        p.Mrp > 0 ? (int)Math.Round((p.Mrp - p.Price) / p.Mrp * 100) : 0
+        p.Mrp > 0 ? (int)Math.Round((p.Mrp - p.Price) / p.Mrp * 100) : 0,
+        p.Sku ?? "", p.Subcategory ?? "", p.Description ?? "", p.Unit ?? "", p.StockQuantity,
+        p.IsActive, p.IsFeatured, p.CreatedAt
     );
 }
