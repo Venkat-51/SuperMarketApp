@@ -10,6 +10,7 @@ import { products, categories } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { wishlistApi } from '../../lib/api';
+import { BannerCarousel, BannerItem } from '../components/BannerCarousel';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
@@ -74,6 +75,53 @@ export default function HomeScreen() {
 
   const isSearching = searchQuery.trim().length > 0;
 
+  const homeBanners: BannerItem[] = [
+    {
+      id: 'fresh-deals',
+      badge: '🔥 Hot Offer',
+      title: 'Fresh Deals!',
+      subtitle: 'Up to 30% off on staples & dairy',
+      buttonText: 'Shop Now →',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',
+      gradient: 'linear-gradient(100deg, rgba(230,115,0,0.92) 45%, rgba(230,115,0,0.3) 100%)',
+      buttonTextColor: '#ea580c',
+      onClick: () => navigate('/home'),
+    },
+    {
+      id: 'free-delivery',
+      badge: '🚚 Fast Delivery',
+      title: 'Free Delivery',
+      subtitle: 'On orders above ₹299',
+      buttonText: 'Order Now →',
+      image: 'https://images.unsplash.com/photo-1601598851547-4302969d0614?w=600&q=80',
+      gradient: 'linear-gradient(100deg, rgba(21,101,32,0.92) 45%, rgba(21,101,32,0.3) 100%)',
+      buttonTextColor: '#15803d',
+      onClick: () => navigate('/cart'),
+    },
+    {
+      id: 'all-products',
+      badge: '🛒 All Categories',
+      title: '125+ Products',
+      subtitle: 'Staples, Dairy & Beverages',
+      buttonText: 'Explore All →',
+      image: 'https://images.unsplash.com/photo-1506617564039-2f3b650b7010?w=600&q=80',
+      gradient: 'linear-gradient(100deg, rgba(72,52,212,0.92) 45%, rgba(72,52,212,0.3) 100%)',
+      buttonTextColor: '#6d28d9',
+      onClick: () => navigate('/categories'),
+    },
+    {
+      id: 'daily-essentials',
+      badge: '⭐ Top Picks',
+      title: 'Daily Essentials',
+      subtitle: 'Dairy, snacks & beverages',
+      buttonText: 'View Offers →',
+      image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80',
+      gradient: 'linear-gradient(100deg, rgba(198,40,40,0.90) 45%, rgba(198,40,40,0.25) 100%)',
+      buttonTextColor: '#dc2626',
+      onClick: () => navigate('/home?category=Dairy%20%26%20Breakfast'),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-white lg:bg-gray-50/50 pb-24 lg:pb-12">
       {/* Mobile Top Header (Hidden on Desktop) */}
@@ -127,123 +175,9 @@ export default function HomeScreen() {
       </div>
 
       <div className="px-4 lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6">
-        {/* Promotional Banners — hidden while searching */}
+        {/* Promotional Banners Carousel — hidden while searching */}
         {!isSearching && (
-          <div className="my-4 -mx-4 lg:mx-0 px-4 lg:px-0 flex flex-row gap-3 overflow-x-auto no-scrollbar lg:grid lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
-            
-            {/* Banner 1 — Fresh Deals */}
-            <Card className="w-72 lg:w-auto h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative shadow-sm hover:shadow-md transition-all group" style={{ scrollSnapAlign: 'start' }}>
-              <img
-                src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80"
-                alt="Fresh deals"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(100deg, rgba(230,115,0,0.92) 45%, rgba(230,115,0,0.3) 100%)' }}
-              />
-              <div className="relative h-full flex flex-col justify-between p-4">
-                <div>
-                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                    🔥 Hot Offer
-                  </span>
-                  <h3 className="text-lg font-extrabold text-white leading-tight">Fresh Deals!</h3>
-                  <p className="text-xs text-orange-100 mt-0.5">Up to 30% off on staples & dairy</p>
-                </div>
-                <button
-                  onClick={() => navigate('/home')}
-                  className="self-start bg-white text-orange-600 text-xs font-bold px-4 py-1.5 rounded-full shadow hover:bg-orange-50 transition-colors"
-                >
-                  Shop Now →
-                </button>
-              </div>
-            </Card>
-
-            {/* Banner 2 — Free Delivery */}
-            <Card className="w-72 lg:w-auto h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative shadow-sm hover:shadow-md transition-all group" style={{ scrollSnapAlign: 'start' }}>
-              <img
-                src="https://images.unsplash.com/photo-1601598851547-4302969d0614?w=600&q=80"
-                alt="Free delivery"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(100deg, rgba(21,101,32,0.92) 45%, rgba(21,101,32,0.3) 100%)' }}
-              />
-              <div className="relative h-full flex flex-col justify-between p-4">
-                <div>
-                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                    🚚 Fast Delivery
-                  </span>
-                  <h3 className="text-lg font-extrabold text-white leading-tight">Free Delivery</h3>
-                  <p className="text-xs text-green-100 mt-0.5">On orders above ₹299</p>
-                </div>
-                <button
-                  onClick={() => navigate('/cart')}
-                  className="self-start bg-white text-green-700 text-xs font-bold px-4 py-1.5 rounded-full shadow hover:bg-green-50 transition-colors"
-                >
-                  Order Now →
-                </button>
-              </div>
-            </Card>
-
-            {/* Banner 3 — 125+ Products */}
-            <Card className="w-72 lg:w-auto h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative shadow-sm hover:shadow-md transition-all group" style={{ scrollSnapAlign: 'start' }}>
-              <img
-                src="https://images.unsplash.com/photo-1506617564039-2f3b650b7010?w=600&q=80"
-                alt="Explore products"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(100deg, rgba(72,52,212,0.92) 45%, rgba(72,52,212,0.3) 100%)' }}
-              />
-              <div className="relative h-full flex flex-col justify-between p-4">
-                <div>
-                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                    🛒 All Categories
-                  </span>
-                  <h3 className="text-lg font-extrabold text-white leading-tight">125+ Products</h3>
-                  <p className="text-xs text-purple-100 mt-0.5">Staples, Dairy & Beverages</p>
-                </div>
-                <button
-                  onClick={() => navigate('/categories')}
-                  className="self-start bg-white text-purple-700 text-xs font-bold px-4 py-1.5 rounded-full shadow hover:bg-purple-50 transition-colors"
-                >
-                  Explore All →
-                </button>
-              </div>
-            </Card>
-
-            {/* Banner 4 — Daily Essentials */}
-            <Card className="w-72 lg:w-auto h-40 rounded-2xl overflow-hidden flex-shrink-0 border-0 relative shadow-sm hover:shadow-md transition-all group" style={{ scrollSnapAlign: 'start' }}>
-              <img
-                src="https://images.unsplash.com/photo-1563636619-e9143da7973b?w=600&q=80"
-                alt="Daily essentials"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(100deg, rgba(198,40,40,0.90) 45%, rgba(198,40,40,0.25) 100%)' }}
-              />
-              <div className="relative h-full flex flex-col justify-between p-4">
-                <div>
-                  <span className="inline-block bg-white/25 text-white text-xs font-semibold px-2 py-0.5 rounded-full mb-2">
-                    ⭐ Top Picks
-                  </span>
-                  <h3 className="text-lg font-extrabold text-white leading-tight">Daily Essentials</h3>
-                  <p className="text-xs text-red-100 mt-0.5">Dairy, snacks & beverages</p>
-                </div>
-                <button
-                  onClick={() => navigate('/home?category=Dairy%20%26%20Breakfast')}
-                  className="self-start bg-white text-red-600 text-xs font-bold px-4 py-1.5 rounded-full shadow hover:bg-red-50 transition-colors"
-                >
-                  View Offers →
-                </button>
-              </div>
-            </Card>
-
-          </div>
+          <BannerCarousel banners={homeBanners} autoplayInterval={4500} />
         )}
 
         {/* Mobile Category Chips (Hidden on Desktop) */}
