@@ -4,6 +4,7 @@ namespace SuperMarketAPI.DTOs;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 public record LoginRequest([Required, EmailAddress] string Email, [Required] string Password);
+public record GoogleLoginRequest([Required] string IdToken);
 
 public record RegisterRequest(
     [Required, StringLength(80, MinimumLength = 2)] string Name,

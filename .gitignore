@@ -4,6 +4,5 @@ backend/supermarketapi/bin/
 backend/supermarketapi/obj/
 dist/
 frontend/dist/
-.env
-.env.local
-.vs/
+.env*
+.vs/

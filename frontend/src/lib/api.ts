@@ -162,6 +162,15 @@ export const authApi = {
     return result;
   },
 
+  googleLogin: async (idToken: string) => {
+    const result = await apiFetch<{ token: string; user: ApiUser }>(
+      '/auth/google',
+      { method: 'POST', body: JSON.stringify({ idToken }) }
+    );
+    if (result.data?.token) tokenStore.set(result.data.token);
+    return result;
+  },
+
   me: () => apiFetch<ApiUser>('/auth/me'),
 
   updateProfile: (payload: { name: string; email?: string }) =>

@@ -68,6 +68,70 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse(token, ToUserDto(user)));
     }
 
+    /// <summary>POST /api/auth/google — Authenticate user with Google ID Token or payload</summary>
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest req)
+    {
+        try
+        {
+            string email = "";
+            string name = "";
+
+            // Parse ID token (Supports JWT payload decoding or raw base64 payload)
+            var parts = req.IdToken.Split('.');
+            if (parts.Length >= 2)
+            {
+                var payloadJson = System.Text.Encoding.UTF8.GetString(
+                    Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(parts[1]));
+                var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("email", out var emailProp))
+                    email = emailProp.GetString() ?? "";
+
+                if (root.TryGetProperty("name", out var nameProp))
+                    name = nameProp.GetString() ?? "";
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new { error = "Unable to retrieve email from Google sign-in." });
+            }
+
+            email = email.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(name)) name = email.Split('@')[0];
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Name         = name,
+                    Email        = email,
+                    Phone        = string.Empty,
+                    Role         = "Customer",
+                    IsActive     = true,
+                    CreatedAt    = DateTime.UtcNow,
+                    LastLoginAt  = DateTime.UtcNow
+                };
+                _db.Users.Add(user);
+            }
+            else
+            {
+                user.LastLoginAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+
+            var token = _jwt.GenerateToken(user);
+            return Ok(new AuthResponse(token, ToUserDto(user)));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = "Google authentication failed: " + ex.Message });
+        }
+    }
+
     /// <summary>GET /api/auth/me — Get current user</summary>
     [HttpGet("me")]
     [Microsoft.AspNetCore.Authorization.Authorize]
