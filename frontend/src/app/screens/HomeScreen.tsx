@@ -184,6 +184,18 @@ export default function HomeScreen() {
         {!isSearching && (
           <div className="my-4 -mx-4 px-4 overflow-x-auto no-scrollbar lg:hidden">
             <div className="flex gap-2" style={{ width: 'max-content' }}>
+              <button
+                onClick={() => handleSelectCategory('all')}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border"
+                style={{
+                  backgroundColor: activeCategory === 'all' ? '#FF9933' : '#F9F9F9',
+                  color: activeCategory === 'all' ? '#fff' : '#374151',
+                  borderColor: activeCategory === 'all' ? '#FF9933' : '#E5E7EB',
+                }}
+              >
+                <span>🛒</span>
+                <span>All</span>
+              </button>
               {categories.map(cat => {
                 const isActive = activeCategory === cat.id;
                 return (

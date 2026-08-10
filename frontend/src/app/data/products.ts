@@ -147,7 +147,6 @@ export const products: Product[] = [
 ];
 
 export const categories = [
-  { id: 'all',             name: 'All',           icon: '🛒' },
   { id: 'Staples',         name: 'Staples',       icon: '🌾' },
   { id: 'Dairy & Breakfast', name: 'Dairy',       icon: '🥛' },
   { id: 'Beverages',       name: 'Beverages',     icon: '☕' },
