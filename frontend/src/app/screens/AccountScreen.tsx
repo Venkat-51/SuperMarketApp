@@ -16,6 +16,7 @@ import {
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import BottomNav from '../components/BottomNav';
+import { useCart } from '../context/CartContext';
 import { authApi, ordersApi, wishlistApi, reviewsApi, type ApiUser } from '../../lib/api';
 
 const menuSections = [

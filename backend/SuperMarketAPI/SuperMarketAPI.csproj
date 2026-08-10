@@ -22,6 +22,10 @@
 
     <!-- Swagger / OpenAPI -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.*" />
+    <!-- Copy credentials.json to output directory -->
+    <None Update="credentials.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

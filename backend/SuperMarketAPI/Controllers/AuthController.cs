@@ -77,20 +77,33 @@ public class AuthController : ControllerBase
             string email = "";
             string name = "";
 
-            // Parse ID token (Supports JWT payload decoding or raw base64 payload)
-            var parts = req.IdToken.Split('.');
-            if (parts.Length >= 2)
+            // Parse ID token (Supports JWT payload decoding or JSON string)
+            var trimmedToken = req.IdToken.Trim();
+            if (trimmedToken.StartsWith("{") && trimmedToken.EndsWith("}"))
             {
-                var payloadJson = System.Text.Encoding.UTF8.GetString(
-                    Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(parts[1]));
-                var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+                using var doc = System.Text.Json.JsonDocument.Parse(trimmedToken);
                 var root = doc.RootElement;
-
                 if (root.TryGetProperty("email", out var emailProp))
                     email = emailProp.GetString() ?? "";
-
                 if (root.TryGetProperty("name", out var nameProp))
                     name = nameProp.GetString() ?? "";
+            }
+            else
+            {
+                var parts = req.IdToken.Split('.');
+                if (parts.Length >= 2)
+                {
+                    var payloadJson = System.Text.Encoding.UTF8.GetString(
+                        Microsoft.IdentityModel.Tokens.Base64UrlEncoder.DecodeBytes(parts[1]));
+                    using var doc = System.Text.Json.JsonDocument.Parse(payloadJson);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("email", out var emailProp))
+                        email = emailProp.GetString() ?? "";
+
+                    if (root.TryGetProperty("name", out var nameProp))
+                        name = nameProp.GetString() ?? "";
+                }
             }
 
             if (string.IsNullOrWhiteSpace(email))
