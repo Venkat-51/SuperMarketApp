@@ -4,8 +4,9 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
-import { Star, Package, ArrowLeft, CheckCircle2, Clock, MapPin, CreditCard } from 'lucide-react';
-import { ordersApi, reviewsApi, ApiOrder, ApiOrderItem } from '../../lib/api';
+import { Star, Package, ArrowLeft, CheckCircle2, Clock, MapPin, CreditCard, Download } from 'lucide-react';
+import { ordersApi, reviewsApi, authApi, ApiOrder, ApiOrderItem } from '../../lib/api';
+import { generateInvoicePDF } from '../../lib/invoiceGenerator';
 
 export default function OrderDetailScreen() {
   const { id } = useParams();
@@ -13,6 +14,8 @@ export default function OrderDetailScreen() {
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | undefined>();
+  const [userPhone, setUserPhone] = useState<string | undefined>();
 
   const [reviewingItem, setReviewingItem] = useState<ApiOrderItem | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -25,12 +28,22 @@ export default function OrderDetailScreen() {
     let mounted = true;
     if (!id) return;
     const orderId = Number(id);
+
     ordersApi.get(orderId).then((res) => {
       if (!mounted) return;
       if (res.error) setError(res.error);
       else setOrder(res.data ?? null);
       setLoading(false);
     });
+
+    authApi.me().then((res) => {
+      if (!mounted) return;
+      if (!res.error && res.data) {
+        setUserName(res.data.name);
+        setUserPhone(res.data.phone);
+      }
+    });
+
     return () => { mounted = false; };
   }, [id]);
 
@@ -39,6 +52,27 @@ export default function OrderDetailScreen() {
   if (!order) return <div className="p-8 text-center text-gray-500 font-semibold">Order not found.</div>;
 
   const itemSubtotal = order.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+
+  const handleDownloadInvoice = () => {
+    if (!order) return;
+    generateInvoicePDF({
+      orderId: order.id,
+      date: new Date(order.createdAt).toLocaleDateString(),
+      customerName: userName,
+      customerPhone: userPhone,
+      address: order.address,
+      paymentMethod: order.paymentMethod,
+      paymentId: order.paymentId,
+      items: order.items.map((i) => ({
+        name: i.productName,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+      itemSubtotal,
+      deliveryFee: order.deliveryFee || (order.total - itemSubtotal),
+      total: order.total,
+    });
+  };
 
   const handleOpenReview = (item: ApiOrderItem) => {
     setReviewingItem(item);
@@ -88,10 +122,19 @@ export default function OrderDetailScreen() {
               <p className="text-xs text-gray-500 mt-0.5">Placed on {new Date(order.createdAt).toLocaleString()}</p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{order.status}</span>
-          </span>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleDownloadInvoice}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Invoice</span>
+            </Button>
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{order.status}</span>
+            </span>
+          </div>
         </div>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">

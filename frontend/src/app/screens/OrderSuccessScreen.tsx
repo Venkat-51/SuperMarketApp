@@ -2,8 +2,9 @@ import { useNavigate, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { CheckCircle2, Package } from 'lucide-react';
+import { CheckCircle2, Package, Download } from 'lucide-react';
 import { authApi } from '../../lib/api';
+import { generateInvoicePDF } from '../../lib/invoiceGenerator';
 
 interface LocationState {
   paymentMethod?: 'cod' | 'online';
@@ -201,15 +202,41 @@ export default function OrderSuccessScreen() {
             Continue Shopping
           </Button>
           <Button
-            onClick={() => navigate('/home')}
+            onClick={() => {
+              generateInvoicePDF({
+                orderId: orderId,
+                date: new Date().toLocaleDateString(),
+                customerName: name || 'Valued Customer',
+                paymentMethod: state.paymentMethod === 'cod' ? 'Cash on Delivery' : state.subMethod || 'Online Payment',
+                paymentId: state.paymentId,
+                items: [
+                  { name: 'SuperMarket Order Items', quantity: 1, price: 0 }
+                ],
+                itemSubtotal: 0,
+                deliveryFee: 0,
+                total: 0,
+              });
+            }}
             variant="outline"
             style={{
               width: '100%', height: 48, borderRadius: 14,
               fontWeight: 700, fontSize: 14,
               border: '2px solid #FF9933', color: '#FF9933',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
             }}
           >
-            Track My Order
+            <Download size={18} />
+            Download Invoice PDF
+          </Button>
+          <Button
+            onClick={() => navigate('/orders')}
+            variant="ghost"
+            style={{
+              width: '100%', height: 44, borderRadius: 14,
+              fontWeight: 700, fontSize: 14, color: '#4b5563',
+            }}
+          >
+            View Order History
           </Button>
         </div>
       </div>

@@ -58,7 +58,7 @@ export default function LoginScreen() {
     }
   };
 
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '713169835107-96clakd8q2srubilha0qjdr34d2sgq4h.apps.googleusercontent.com';
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '713169835107-n9v4k0r4qiq6i3um8urrt41bf5ooufo9.apps.googleusercontent.com';
 
   useEffect(() => {
     const initGsi = () => {

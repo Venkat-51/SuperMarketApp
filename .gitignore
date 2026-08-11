@@ -1,12 +1,34 @@
+# Node & Build artifacts
 node_modules/
 frontend/node_modules/
+dist/
+frontend/dist/
+build/
+
+# .NET Build output
 backend/**/bin/
 backend/**/obj/
 **/bin/
 **/obj/
-dist/
-frontend/dist/
-.env*
 .vs/
+*.user
+*.userosv
+*.suo
+
+# Environment & Credentials
+.env*
+!.env.example
 credentials.json
-**/credentials.json
+**/credentials.json
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
