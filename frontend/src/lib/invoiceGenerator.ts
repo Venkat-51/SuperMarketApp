@@ -114,12 +114,32 @@ export function generateInvoicePDF(data: InvoiceData) {
   doc.setFontSize(9);
   doc.setTextColor(75, 85, 99);
 
-  const paymentMethodText = (data.paymentMethod || 'Cash on Delivery').toUpperCase();
+  const rawMethod = (data.paymentMethod || 'cod').toLowerCase();
+  let paymentMethodText = 'CASH ON DELIVERY';
+  let isCOD = true;
+
+  if (rawMethod === 'cod' || rawMethod.includes('cash')) {
+    paymentMethodText = 'CASH ON DELIVERY';
+    isCOD = true;
+  } else if (rawMethod.includes('upi')) {
+    paymentMethodText = 'ONLINE (UPI)';
+    isCOD = false;
+  } else if (rawMethod.includes('card')) {
+    paymentMethodText = 'ONLINE (CREDIT/DEBIT CARD)';
+    isCOD = false;
+  } else if (rawMethod.includes('netbanking') || rawMethod.includes('bank')) {
+    paymentMethodText = 'ONLINE (NET BANKING)';
+    isCOD = false;
+  } else {
+    paymentMethodText = `ONLINE (${data.paymentMethod.toUpperCase()})`;
+    isCOD = false;
+  }
+
   doc.text(`Payment Method: ${paymentMethodText}`, 120, startY + 6);
   if (data.paymentId) {
     doc.text(`Payment Ref ID: ${data.paymentId}`, 120, startY + 11);
   }
-  doc.text(`Payment Status: PAID`, 120, startY + (data.paymentId ? 16 : 11));
+  doc.text(`Payment Status: ${isCOD ? 'PAY ON ARRIVAL (PENDING)' : 'PAID (SUCCESS)'}`, 120, startY + (data.paymentId ? 16 : 11));
 
   // Table Setup
   const tableStartY = Math.max(currentY, startY + 24) + 6;
