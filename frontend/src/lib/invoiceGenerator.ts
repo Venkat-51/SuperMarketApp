@@ -114,7 +114,8 @@ export function generateInvoicePDF(data: InvoiceData) {
   doc.setFontSize(9);
   doc.setTextColor(75, 85, 99);
 
-  doc.text(`Payment Method: ${data.paymentMethod.toUpperCase()}`, 120, startY + 6);
+  const paymentMethodText = (data.paymentMethod || 'Cash on Delivery').toUpperCase();
+  doc.text(`Payment Method: ${paymentMethodText}`, 120, startY + 6);
   if (data.paymentId) {
     doc.text(`Payment Ref ID: ${data.paymentId}`, 120, startY + 11);
   }
@@ -142,18 +143,25 @@ export function generateInvoicePDF(data: InvoiceData) {
   doc.setFontSize(9);
   doc.setTextColor(55, 65, 81);
 
-  data.items.forEach((item, index) => {
+  const safeItems = Array.isArray(data.items) && data.items.length > 0
+    ? data.items
+    : [{ name: 'SuperMarket Grocery Order', quantity: 1, price: data.total || 0 }];
+
+  safeItems.forEach((item, index) => {
     // Alternate light background for clarity
     if (index % 2 === 1) {
       doc.setFillColor(249, 250, 251);
       doc.rect(14, rowY - 5, 182, 7, 'F');
     }
 
-    const itemTotal = item.price * item.quantity;
+    const price = typeof item.price === 'number' ? item.price : 0;
+    const qty = typeof item.quantity === 'number' ? item.quantity : 1;
+    const itemTotal = price * qty;
+    const itemName = item.name || 'Grocery Item';
 
-    doc.text(item.name.length > 50 ? item.name.substring(0, 48) + '...' : item.name, 18, rowY);
-    doc.text(item.quantity.toString(), 125, rowY, { align: 'center' });
-    doc.text(`Rs. ${item.price.toFixed(2)}`, 155, rowY, { align: 'right' });
+    doc.text(itemName.length > 50 ? itemName.substring(0, 48) + '...' : itemName, 18, rowY);
+    doc.text(qty.toString(), 125, rowY, { align: 'center' });
+    doc.text(`Rs. ${price.toFixed(2)}`, 155, rowY, { align: 'right' });
     doc.text(`Rs. ${itemTotal.toFixed(2)}`, 190, rowY, { align: 'right' });
 
     rowY += 8;
@@ -167,13 +175,17 @@ export function generateInvoicePDF(data: InvoiceData) {
   // Summary Calculations
   doc.setFontSize(9);
 
+  const subtotalVal = typeof data.itemSubtotal === 'number' ? data.itemSubtotal : safeItems.reduce((acc, i) => acc + (i.price || 0) * (i.quantity || 1), 0);
+  const deliveryVal = typeof data.deliveryFee === 'number' ? data.deliveryFee : 0;
+  const totalVal = typeof data.total === 'number' && data.total > 0 ? data.total : (subtotalVal + deliveryVal);
+
   doc.setFont('helvetica', 'normal');
   doc.text('Items Subtotal:', 140, rowY);
-  doc.text(`Rs. ${data.itemSubtotal.toFixed(2)}`, 190, rowY, { align: 'right' });
+  doc.text(`Rs. ${subtotalVal.toFixed(2)}`, 190, rowY, { align: 'right' });
   rowY += 6;
 
   doc.text('Delivery Fee:', 140, rowY);
-  doc.text(`Rs. ${data.deliveryFee.toFixed(2)}`, 190, rowY, { align: 'right' });
+  doc.text(`Rs. ${deliveryVal.toFixed(2)}`, 190, rowY, { align: 'right' });
   rowY += 8;
 
   // Total Line
@@ -184,7 +196,7 @@ export function generateInvoicePDF(data: InvoiceData) {
   doc.setFontSize(11);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.text('Grand Total:', 140, rowY + 1.5);
-  doc.text(`Rs. ${data.total.toFixed(2)}`, 190, rowY + 1.5, { align: 'right' });
+  doc.text(`Rs. ${totalVal.toFixed(2)}`, 190, rowY + 1.5, { align: 'right' });
 
   // Footer Note
   const footerY = 275;

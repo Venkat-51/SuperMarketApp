@@ -198,7 +198,9 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
     try {
       const payload = {
-        items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+        items: cartItems
+          .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
+          .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
         addressId: selectedAddress?.id,
         paymentMethod: 'cod' as const,
       };
@@ -211,7 +213,7 @@ export default function CheckoutScreen() {
       }
 
       clearCart();
-      navigate('/order-success', { state: { paymentMethod: 'cod' } });
+      navigate('/order-success', { state: { paymentMethod: 'cod', orderId: res.data?.id } });
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Could not place order.');
     } finally {
@@ -293,7 +295,9 @@ export default function CheckoutScreen() {
 
             // Place order on the backend with payment details
             const payload = {
-              items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+              items: cartItems
+                .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
+                .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
               addressId: selectedAddress?.id,
               paymentMethod: 'online' as const,
               paymentId: verifyResult.data?.paymentId ?? response.razorpay_payment_id,
@@ -313,6 +317,7 @@ export default function CheckoutScreen() {
                 paymentMethod: 'online',
                 subMethod: razorpaySubMethod,
                 paymentId: response.razorpay_payment_id,
+                orderId: placeRes.data?.id,
               },
             });
           });
@@ -334,7 +339,9 @@ export default function CheckoutScreen() {
       setIsProcessing(true);
       const paymentId = demoOrderId || `DEMO-${Date.now()}`;
       const payload = {
-        items: cartItems.map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+        items: cartItems
+          .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
+          .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
         addressId: selectedAddress?.id,
         paymentMethod: 'online' as const,
         paymentId,
@@ -349,7 +356,7 @@ export default function CheckoutScreen() {
       setShowDemoPayment(false);
       setIsProcessing(false);
       navigate('/order-success', {
-        state: { paymentMethod: 'online', subMethod: razorpaySubMethod, paymentId },
+        state: { paymentMethod: 'online', subMethod: razorpaySubMethod, paymentId, orderId: res.data?.id },
       });
     })();
   };
@@ -436,6 +443,11 @@ export default function CheckoutScreen() {
   const handleSelectOnline = () => {
     setSelectedPayment('razorpay');
     setIsOnlineExpanded(true);
+    setErrorMsg('');
+  };
+
+  const handleSelectCOD = () => {
+    setSelectedPayment('cod');
     setErrorMsg('');
   };
 
@@ -683,7 +695,7 @@ export default function CheckoutScreen() {
 
             {/* COD Card */}
             <div
-              onClick={() => { setSelectedPayment('cod'); setIsOnlineExpanded(false); }}
+              onClick={handleSelectCOD}
               style={{
                 borderRadius: 16,
                 padding: 16,

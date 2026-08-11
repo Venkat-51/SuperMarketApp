@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { CheckCircle2, Package, Download } from 'lucide-react';
-import { authApi } from '../../lib/api';
+import { authApi, ordersApi, ApiOrder } from '../../lib/api';
 import { generateInvoicePDF } from '../../lib/invoiceGenerator';
 
 interface LocationState {
   paymentMethod?: 'cod' | 'online';
   subMethod?: 'upi' | 'card' | 'netbanking';
   paymentId?: string;
+  orderId?: number;
 }
 
 const PAYMENT_LABELS: Record<string, { icon: string; label: string; color: string; bg: string }> = {
@@ -19,11 +20,6 @@ const PAYMENT_LABELS: Record<string, { icon: string; label: string; color: strin
   netbanking: { icon: '🏦', label: 'Net Banking',       color: '#4c1d95', bg: '#ede9fe' },
 };
 
-function generateOrderId() {
-  const ts = Date.now().toString(36).toUpperCase();
-  return `ORD-${ts}`;
-}
-
 export default function OrderSuccessScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,8 +27,10 @@ export default function OrderSuccessScreen() {
 
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [meChecked, setMeChecked] = useState(false);
+  const [order, setOrder] = useState<ApiOrder | null>(null);
 
   const paymentKey =
     state.paymentMethod === 'online' && state.subMethod
@@ -42,19 +40,29 @@ export default function OrderSuccessScreen() {
       : 'cod';
 
   const paymentInfo = PAYMENT_LABELS[paymentKey];
-  const orderId = generateOrderId();
+  const orderDisplayId = state.orderId ? state.orderId : (order?.id ?? 'ORD-' + Date.now().toString(36).toUpperCase());
 
   useEffect(() => {
     (async () => {
       const res = await authApi.me();
       if (!res.error && res.data) {
+        setName(res.data.name || '');
+        setPhone(res.data.phone || '');
         if (!res.data.name || res.data.name.trim() === '') {
           setShowNamePrompt(true);
         }
       }
       setMeChecked(true);
     })();
-  }, []);
+
+    if (state.orderId) {
+      ordersApi.get(state.orderId).then((res) => {
+        if (!res.error && res.data) {
+          setOrder(res.data);
+        }
+      });
+    }
+  }, [state.orderId]);
 
   return (
     <div
@@ -203,19 +211,41 @@ export default function OrderSuccessScreen() {
           </Button>
           <Button
             onClick={() => {
-              generateInvoicePDF({
-                orderId: orderId,
-                date: new Date().toLocaleDateString(),
-                customerName: name || 'Valued Customer',
-                paymentMethod: state.paymentMethod === 'cod' ? 'Cash on Delivery' : state.subMethod || 'Online Payment',
-                paymentId: state.paymentId,
-                items: [
-                  { name: 'SuperMarket Order Items', quantity: 1, price: 0 }
-                ],
-                itemSubtotal: 0,
-                deliveryFee: 0,
-                total: 0,
-              });
+              if (order) {
+                const subtotal = order.items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+                generateInvoicePDF({
+                  orderId: order.id,
+                  date: new Date(order.createdAt).toLocaleDateString(),
+                  customerName: name || 'Valued Customer',
+                  customerPhone: phone,
+                  address: order.address,
+                  paymentMethod: order.paymentMethod,
+                  paymentId: order.paymentId || state.paymentId,
+                  items: order.items.map(i => ({
+                    name: i.productName,
+                    quantity: i.quantity,
+                    price: i.price
+                  })),
+                  itemSubtotal: subtotal,
+                  deliveryFee: order.deliveryFee,
+                  total: order.total
+                });
+              } else {
+                generateInvoicePDF({
+                  orderId: orderDisplayId,
+                  date: new Date().toLocaleDateString(),
+                  customerName: name || 'Valued Customer',
+                  customerPhone: phone,
+                  paymentMethod: state.paymentMethod === 'cod' ? 'Cash on Delivery' : state.subMethod || 'Online Payment',
+                  paymentId: state.paymentId,
+                  items: [
+                    { name: 'SuperMarket Grocery Order', quantity: 1, price: 0 }
+                  ],
+                  itemSubtotal: 0,
+                  deliveryFee: 0,
+                  total: 0,
+                });
+              }
             }}
             variant="outline"
             style={{
