@@ -102,8 +102,8 @@ export default function WishlistScreen() {
       mrp: product.mrp,
       weight: product.weight,
       category: product.category,
-      quantity: 1,
-    });
+      inStock: product.inStock,
+    }, 1);
     navigate('/cart');
   };
 

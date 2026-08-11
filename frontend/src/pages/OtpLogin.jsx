@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "../firebase/firebase";
+import { auth } from "../firebase";
 
 const OtpLogin = () => {
   const [phone, setPhone] = useState("");

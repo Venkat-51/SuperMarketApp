@@ -129,6 +129,7 @@ export interface ApiUser {
   name: string;
   phone: string;
   email?: string;
+  role?: string;
   createdAt?: string;
 }
 

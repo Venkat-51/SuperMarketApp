@@ -88,9 +88,8 @@ export default function OrderDetailScreen() {
     setReviewError('');
     setReviewSuccess('');
 
-    const res = await reviewsApi.submit({
+    const res = await reviewsApi.add({
       productId: reviewingItem.productId,
-      orderId: order.id,
       rating: reviewRating,
       comment: reviewComment,
     });
@@ -148,8 +147,8 @@ export default function OrderDetailScreen() {
               </h3>
 
               <div className="divide-y divide-gray-100">
-                {order.items.map((item) => (
-                  <div key={item.id} className="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
+                {order.items.map((item, idx) => (
+                  <div key={item.productId || idx} className="py-3.5 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 text-gray-700 font-bold text-sm">
                         {item.quantity}x

@@ -33,7 +33,7 @@ export default function ProductDetailScreen() {
   useEffect(() => {
     let mounted = true;
     if (product) {
-      reviewsApi.getForProduct(product.id).then((res) => {
+      reviewsApi.getForProduct(Number(product.id)).then((res) => {
         if (mounted && res.data) setReviews(res.data);
       });
     }

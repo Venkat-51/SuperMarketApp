@@ -131,7 +131,7 @@ export default function OrderSuccessScreen() {
               <Package size={20} color="#FF9933" />
             </div>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Order ID: #{orderId}</p>
+              <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Order ID: #{orderDisplayId}</p>
               <p style={{ fontSize: 12, color: '#6b7280' }}>
                 Delivery: Tomorrow, 10 AM – 2 PM
               </p>
