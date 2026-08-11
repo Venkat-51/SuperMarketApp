@@ -116,30 +116,29 @@ export function generateInvoicePDF(data: InvoiceData) {
 
   const rawMethod = (data.paymentMethod || 'cod').toLowerCase();
   let paymentMethodText = 'CASH ON DELIVERY';
-  let isCOD = true;
+  let isPaid = false;
 
-  if (rawMethod === 'cod' || rawMethod.includes('cash')) {
-    paymentMethodText = 'CASH ON DELIVERY';
-    isCOD = true;
-  } else if (rawMethod.includes('upi')) {
-    paymentMethodText = 'ONLINE (UPI)';
-    isCOD = false;
-  } else if (rawMethod.includes('card')) {
-    paymentMethodText = 'ONLINE (CREDIT/DEBIT CARD)';
-    isCOD = false;
-  } else if (rawMethod.includes('netbanking') || rawMethod.includes('bank')) {
-    paymentMethodText = 'ONLINE (NET BANKING)';
-    isCOD = false;
+  if (data.paymentId || rawMethod.includes('online') || rawMethod.includes('upi') || rawMethod.includes('card') || rawMethod.includes('bank') || rawMethod.includes('razorpay')) {
+    isPaid = true;
+    if (rawMethod.includes('upi')) paymentMethodText = 'ONLINE (UPI)';
+    else if (rawMethod.includes('card')) paymentMethodText = 'ONLINE (CARD)';
+    else if (rawMethod.includes('netbanking') || rawMethod.includes('bank')) paymentMethodText = 'ONLINE (NET BANKING)';
+    else paymentMethodText = 'ONLINE PAYMENT (RAZORPAY)';
   } else {
-    paymentMethodText = `ONLINE (${data.paymentMethod.toUpperCase()})`;
-    isCOD = false;
+    paymentMethodText = 'CASH ON DELIVERY';
+    isPaid = false;
   }
 
-  doc.text(`Payment Method: ${paymentMethodText}`, 120, startY + 6);
+  let infoY = startY + 6;
+  doc.text(`Payment Method: ${paymentMethodText}`, 120, infoY);
+  infoY += 5;
+
   if (data.paymentId) {
-    doc.text(`Payment Ref ID: ${data.paymentId}`, 120, startY + 11);
+    doc.text(`Payment Ref ID: ${data.paymentId}`, 120, infoY);
+    infoY += 5;
   }
-  doc.text(`Payment Status: ${isCOD ? 'PAY ON ARRIVAL (PENDING)' : 'PAID (SUCCESS)'}`, 120, startY + (data.paymentId ? 16 : 11));
+
+  doc.text(`Payment Status: ${isPaid ? 'PAID (SUCCESS)' : 'PAY ON ARRIVAL'}`, 120, infoY);
 
   // Table Setup
   const tableStartY = Math.max(currentY, startY + 24) + 6;

@@ -167,7 +167,7 @@ export default function OrderSuccessScreen() {
               borderRadius: 10, fontSize: 12, color: '#6b7280',
             }}
           >
-            📩 You will receive order updates via SMS
+            📩 You will receive order updates via Email
           </div>
         </div>
 
