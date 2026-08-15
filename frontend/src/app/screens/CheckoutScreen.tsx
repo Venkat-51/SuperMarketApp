@@ -117,7 +117,7 @@ function SubMethodTab({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CheckoutScreen() {
   const navigate = useNavigate();
-  const { getCartTotal, clearCart, cartItems } = useCart();
+  const { getCartTotal, clearCart, cartItems, user } = useCart();
 
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null);
   const [razorpaySubMethod, setRazorpaySubMethod] = useState<RazorpaySubMethod>('upi');
@@ -245,39 +245,33 @@ export default function CheckoutScreen() {
         return;
       }
 
-      const { orderId, keyId } = orderResponse.data;
+      const { orderId, keyId: serverKeyId } = orderResponse.data;
+      const activeKeyId = (serverKeyId && serverKeyId !== 'YOUR_RAZORPAY_KEY_ID')
+        ? serverKeyId
+        : (import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TOTFtxe9irFwr6');
 
-      if (!keyId || keyId === 'YOUR_RAZORPAY_KEY_ID') {
+      if (!activeKeyId || activeKeyId === 'YOUR_RAZORPAY_KEY_ID') {
         openDemoPayment(orderId);
         return;
       }
 
       await ensureRazorpayLoaded();
 
-      const methodConfig: Record<RazorpaySubMethod, object> = {
-        upi: { upi: true, card: false, netbanking: false, wallet: false },
-        card: { upi: false, card: true, netbanking: false, wallet: false },
-        netbanking: { upi: false, card: false, netbanking: true, wallet: false },
-      };
-
       const options: RazorpayOptions = {
-        key: keyId,
-        amount: grandTotal * 100, // paise
+        key: activeKeyId,
+        amount: Math.round(grandTotal * 100), // paise
         currency: 'INR',
         name: 'Super Market App',
         description: 'Grocery Order Payment',
-        order_id: orderId,
-        method: methodConfig[razorpaySubMethod] as RazorpayOptions['method'],
         prefill: {  
           name: name.trim(),
-          email: 'customer@example.com',
-          contact: '9999999999',
+          email: user?.email || 'customer@example.com',
+          contact: user?.phone || '9999999999',
         },
         theme: { color: '#FF9933' },
         modal: {
           ondismiss: () => {
             setIsProcessing(false);
-            setErrorMsg('Payment cancelled. Please try again.');
           },
           confirm_close: true,
         },
@@ -324,7 +318,15 @@ export default function CheckoutScreen() {
         },
       };
 
+      if (orderId && !orderId.startsWith('order_')) {
+        options.order_id = orderId;
+      }
+
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        setIsProcessing(false);
+        setErrorMsg(response.error?.description || 'Payment failed. Please try again.');
+      });
       rzp.open();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Could not initialise payment. Please try again.');
@@ -332,7 +334,7 @@ export default function CheckoutScreen() {
       return;
     }
     setIsProcessing(false);
-  }, [clearCart, grandTotal, name, navigate, openDemoPayment, razorpaySubMethod, validateAndPersistName]);
+  }, [cartItems, clearCart, grandTotal, name, navigate, openDemoPayment, razorpaySubMethod, selectedAddress, user, validateAndPersistName]);
 
   const handleDemoPayment = () => {
     (async () => {
