@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { cartApi, wishlistApi, authApi, tokenStore, ApiUser, ApiProduct } from '../../lib/api';
 
+export interface ProductVariant {
+  size: string;
+  price: number;
+  mrp: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -12,6 +18,8 @@ export interface Product {
   weight: string;
   category: string;
   inStock: boolean;
+  unit_type?: 'volume' | 'weight' | string;
+  variants?: ProductVariant[];
 }
 
 export interface CartItem extends Product {

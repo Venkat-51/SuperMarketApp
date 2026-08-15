@@ -4,16 +4,37 @@ import { ArrowLeft, Minus, Plus, Star, Heart, Truck, ShieldCheck, RefreshCw, Sho
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { products } from '../data/products';
-import { useCart } from '../context/CartContext';
+import { useCart, Product, ProductVariant } from '../context/CartContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { reviewsApi, wishlistApi, ApiReview } from '../../lib/api';
+
+const getProductVariants = (p: Product): ProductVariant[] => {
+  if (p.variants && p.variants.length > 0) {
+    return p.variants;
+  }
+  const weightLower = (p.weight || '').toLowerCase();
+  const isVolume = p.unit_type === 'volume' || weightLower.includes('l') || weightLower.includes('ml');
+  if (isVolume) {
+    return [
+      { size: p.weight || '1 L', price: p.price, mrp: p.mrp },
+      { size: '2 L', price: Math.round(p.price * 1.95), mrp: Math.round(p.mrp * 1.95) },
+      { size: '5 L', price: Math.round(p.price * 4.6), mrp: Math.round(p.mrp * 4.6) },
+    ];
+  } else {
+    return [
+      { size: p.weight || '1 kg', price: p.price, mrp: p.mrp },
+      { size: '2 kg', price: Math.round(p.price * 1.95), mrp: Math.round(p.mrp * 1.95) },
+      { size: '5 kg', price: Math.round(p.price * 4.6), mrp: Math.round(p.mrp * 4.6) },
+    ];
+  }
+};
 
 export default function ProductDetailScreen() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [selectedWeight, setSelectedWeight] = useState(0);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [selectedImg, setSelectedImg] = useState(0);
   const [imgFading, setImgFading] = useState(false);
   const [reviews, setReviews] = useState<ApiReview[]>([]);
@@ -22,6 +43,9 @@ export default function ProductDetailScreen() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setSelectedVariantIndex(0);
+    setQuantity(1);
+    setSelectedImg(0);
     const scrollables = document.querySelectorAll('*');
     scrollables.forEach((el) => {
       if (el.scrollTop > 0) {
@@ -43,6 +67,14 @@ export default function ProductDetailScreen() {
   if (!product) {
     return <div className="p-8 text-center text-gray-500 font-semibold">Product not found</div>;
   }
+
+  const variants = getProductVariants(product);
+  const selectedVariant = variants[selectedVariantIndex] || variants[0];
+  const unitPrice = selectedVariant.price;
+  const unitMrp = selectedVariant.mrp;
+  const totalPrice = unitPrice * quantity;
+  const totalMrp = unitMrp * quantity;
+  const discount = unitMrp > unitPrice ? Math.round(((unitMrp - unitPrice) / unitMrp) * 100) : 0;
 
   // Build gallery using real alternate images if provided, else CSS-crop fallback
   const hasRealImages = product.images && product.images.length >= 3;
@@ -66,11 +98,16 @@ export default function ProductDetailScreen() {
     }, 180);
   };
 
-  const weightOptions = [product.weight, '1 kg', '2 kg', '5 kg'];
-  const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100);
-
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    addToCart(
+      {
+        ...product,
+        price: selectedVariant.price,
+        mrp: selectedVariant.mrp,
+        weight: selectedVariant.size,
+      },
+      quantity
+    );
     navigate('/cart');
   };
 
@@ -224,9 +261,9 @@ export default function ProductDetailScreen() {
             {/* Desktop Price Section */}
             <div className="mb-6 p-4 lg:p-5 rounded-2xl bg-gray-50 border border-gray-100">
               <div className="flex items-baseline gap-3 mb-1">
-                <span className="text-3xl lg:text-4xl font-black text-gray-900">₹{product.price * quantity}</span>
-                {product.mrp > product.price && (
-                  <span className="text-lg text-gray-400 line-through">₹{product.mrp * quantity}</span>
+                <span className="text-3xl lg:text-4xl font-black text-gray-900">₹{totalPrice}</span>
+                {totalMrp > totalPrice && (
+                  <span className="text-lg text-gray-400 line-through">₹{totalMrp}</span>
                 )}
                 {discount > 0 && (
                   <Badge className="bg-green-600 text-white text-xs font-bold px-2 py-0.5">
@@ -237,25 +274,30 @@ export default function ProductDetailScreen() {
               <p className="text-xs text-gray-500 font-medium">Inclusive of all taxes • Free shipping on orders over ₹499</p>
             </div>
 
-            {/* Weight Options */}
+            {/* Weight / Size Options */}
             <div className="mb-6">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Select Pack Weight / Size</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                SELECT PACK WEIGHT / SIZE
+              </label>
               <div className="flex gap-2.5 flex-wrap">
-                {weightOptions.map((weight, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedWeight(index)}
-                    className="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all flex items-center gap-1.5"
-                    style={{
-                      borderColor: selectedWeight === index ? '#FF9933' : '#E5E7EB',
-                      backgroundColor: selectedWeight === index ? '#FFF5EB' : 'white',
-                      color: selectedWeight === index ? '#FF9933' : '#374151',
-                      boxShadow: selectedWeight === index ? '0 2px 4px rgba(255,153,51,0.15)' : 'none',
-                    }}
-                  >
-                    <span>{weight}</span>
-                  </button>
-                ))}
+                {variants.map((variant, index) => {
+                  const isSelected = selectedVariantIndex === index;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedVariantIndex(index)}
+                      className="px-4 py-2.5 rounded-xl border font-bold text-xs transition-all flex items-center gap-1.5"
+                      style={{
+                        borderColor: isSelected ? '#FF9933' : '#E5E7EB',
+                        backgroundColor: isSelected ? '#FFF5EB' : 'white',
+                        color: isSelected ? '#FF9933' : '#374151',
+                        boxShadow: isSelected ? '0 2px 4px rgba(255,153,51,0.15)' : 'none',
+                      }}
+                    >
+                      <span>{variant.size}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -284,7 +326,7 @@ export default function ProductDetailScreen() {
                   className="hidden lg:flex flex-1 h-12 rounded-xl font-bold text-sm bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25 items-center justify-center gap-2 transition-all hover:shadow-orange-500/40"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  <span>Add {quantity} to Cart • ₹{product.price * quantity}</span>
+                  <span>Add {quantity} to Cart • ₹{totalPrice}</span>
                 </Button>
               </div>
             </div>
@@ -355,9 +397,13 @@ export default function ProductDetailScreen() {
           <div>
             <p className="text-xs text-gray-500">Total Price</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">₹{product.price * quantity}</span>
-              <span className="text-sm text-gray-400 line-through">₹{product.mrp * quantity}</span>
-              <Badge className="bg-green-100 text-green-700 text-xs">{discount}% OFF</Badge>
+              <span className="text-2xl font-bold">₹{totalPrice}</span>
+              {totalMrp > totalPrice && (
+                <span className="text-sm text-gray-400 line-through">₹{totalMrp}</span>
+              )}
+              {discount > 0 && (
+                <Badge className="bg-green-100 text-green-700 text-xs">{discount}% OFF</Badge>
+              )}
             </div>
           </div>
         </div>
@@ -366,9 +412,10 @@ export default function ProductDetailScreen() {
           className="w-full h-12 rounded-lg font-bold"
           style={{ backgroundColor: '#FF9933' }}
         >
-          Add to Cart
+          Add {quantity} to Cart • ₹{totalPrice}
         </Button>
       </div>
     </div>
   );
 }
+
