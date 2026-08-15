@@ -136,9 +136,9 @@ export default function HomeScreen() {
             <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </div>
           <div className="flex items-center gap-1 ml-3">
-            <button className="p-2 relative">
+            <button onClick={() => navigate('/notifications')} className="p-2 relative" title="Notifications & Offers">
               <Bell className="w-6 h-6 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             </button>
             <button onClick={() => navigate('/cart')} className="p-2 relative">
               <ShoppingCart className="w-6 h-6 text-gray-600" />

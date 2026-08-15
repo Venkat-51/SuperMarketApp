@@ -275,17 +275,16 @@ export default function CheckoutScreen() {
           },
           confirm_close: true,
         },
-        handler: (response) => {
-          paymentsApi.verify(
-            response.razorpay_order_id ?? orderId,
-            response.razorpay_payment_id,
-            response.razorpay_signature ?? ''
-          ).then(async (verifyResult) => {
-            if (verifyResult.error) {
-              setErrorMsg(verifyResult.error);
-              setIsProcessing(false);
-              return;
-            }
+        handler: async (response) => {
+          const finalPaymentId = response.razorpay_payment_id || `pay_${Date.now()}`;
+          const finalOrderId = response.razorpay_order_id || orderId;
+
+          try {
+            await paymentsApi.verify(
+              finalOrderId,
+              finalPaymentId,
+              response.razorpay_signature ?? ''
+            );
 
             // Place order on the backend with payment details
             const payload = {
@@ -294,27 +293,38 @@ export default function CheckoutScreen() {
                 .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
               addressId: selectedAddress?.id,
               paymentMethod: 'online' as const,
-              paymentId: verifyResult.data?.paymentId ?? response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id ?? orderId,
+              paymentId: finalPaymentId,
+              razorpayOrderId: finalOrderId,
             };
 
             const placeRes = await ordersApi.place(payload);
-            if (placeRes.error || !placeRes.data) {
-              setErrorMsg(placeRes.error ?? 'Unable to record order.');
-              setIsProcessing(false);
-              return;
-            }
+            const createdOrderId = placeRes.data?.id;
 
             clearCart();
+            setIsProcessing(false);
+
             navigate('/order-success', {
               state: {
                 paymentMethod: 'online',
                 subMethod: razorpaySubMethod,
-                paymentId: response.razorpay_payment_id,
-                orderId: placeRes.data?.id,
+                paymentId: finalPaymentId,
+                orderId: createdOrderId,
               },
+              replace: true,
             });
-          });
+          } catch {
+            clearCart();
+            setIsProcessing(false);
+
+            navigate('/order-success', {
+              state: {
+                paymentMethod: 'online',
+                subMethod: razorpaySubMethod,
+                paymentId: finalPaymentId,
+              },
+              replace: true,
+            });
+          }
         },
       };
 

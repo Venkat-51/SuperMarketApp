@@ -13,6 +13,7 @@ import CategoriesScreen from './screens/CategoriesScreen';
 import AccountScreen from './screens/AccountScreen';
 import SavedAddressesScreen from './screens/SavedAddressesScreen';
 import WishlistScreen from './screens/WishlistScreen';
+import NotificationsScreen from './screens/NotificationsScreen';
 import LoginScreen from './screens/LoginScreen';
 import DesktopHeader from './components/DesktopHeader';
 import DesktopFooter from './components/DesktopFooter';
@@ -116,6 +117,10 @@ export const router = createBrowserRouter([
       {
         path: '/wishlist',
         Component: WishlistScreen,
+      },
+      {
+        path: '/notifications',
+        Component: NotificationsScreen,
       },
     ],
   },

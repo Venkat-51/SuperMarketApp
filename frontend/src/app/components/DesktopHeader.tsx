@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router';
 import { 
-  ShoppingBag, Search, Heart, ShoppingCart, User, MapPin, 
+  ShoppingBag, Search, Heart, ShoppingCart, User, MapPin, Bell,
   ChevronDown, Sparkles, X, Trash2, ArrowRight, CheckCircle2
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -144,6 +144,16 @@ export default function DesktopHeader() {
         {/* Desktop User Actions (Wishlist, Cart, Profile) */}
         <div className="flex items-center space-x-3">
           
+          {/* Notifications & Offers Button */}
+          <Link
+            to="/notifications"
+            className="flex flex-col items-center justify-center w-11 h-11 rounded-xl text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors relative group"
+            title="Notifications & Offers"
+          >
+            <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          </Link>
+
           {/* Wishlist Button */}
           <Link
             to="/wishlist"

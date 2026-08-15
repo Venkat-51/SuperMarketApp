@@ -268,6 +268,7 @@ export default function AccountScreen() {
                         if (id === 'orders') navigate('/orders');
                         else if (id === 'wishlist') navigate('/wishlist');
                         else if (id === 'addresses') navigate('/addresses');
+                        else if (id === 'notifications') navigate('/notifications');
                       }}
                       className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-orange-50/50 transition-colors text-left group"
                     >
