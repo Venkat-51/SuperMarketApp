@@ -14,6 +14,8 @@ import AccountScreen from './screens/AccountScreen';
 import SavedAddressesScreen from './screens/SavedAddressesScreen';
 import WishlistScreen from './screens/WishlistScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import PrivacySecurityScreen from './screens/PrivacySecurityScreen';
+import HelpSupportScreen from './screens/HelpSupportScreen';
 import LoginScreen from './screens/LoginScreen';
 import DesktopHeader from './components/DesktopHeader';
 import DesktopFooter from './components/DesktopFooter';
@@ -121,6 +123,14 @@ export const router = createBrowserRouter([
       {
         path: '/notifications',
         Component: NotificationsScreen,
+      },
+      {
+        path: '/privacy',
+        Component: PrivacySecurityScreen,
+      },
+      {
+        path: '/help',
+        Component: HelpSupportScreen,
       },
     ],
   },
