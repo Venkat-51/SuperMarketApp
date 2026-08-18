@@ -58,10 +58,11 @@ export default function LoginScreen() {
     }
   };
 
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '713169835107-n9v4k0r4qiq6i3um8urrt41bf5ooufo9.apps.googleusercontent.com';
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   useEffect(() => {
     const initGsi = () => {
+      if (!GOOGLE_CLIENT_ID) return false;
       if (window.google?.accounts?.id) {
         window.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
@@ -85,6 +86,11 @@ export default function LoginScreen() {
   const handleCustomGoogleClick = () => {
     setError('');
     
+    if (!GOOGLE_CLIENT_ID) {
+      setError('Google Client ID is missing. Please set VITE_GOOGLE_CLIENT_ID in your .env file.');
+      return;
+    }
+
     // Check if OAuth2 token client is available for popup window auth
     if (window.google?.accounts?.oauth2) {
       setIsLoading(true);
