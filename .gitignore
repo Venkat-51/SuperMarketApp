@@ -20,6 +20,9 @@ backend/**/obj/
 !.env.example
 credentials.json
 **/credentials.json
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
 
 # OS & Editor generated files
 .DS_Store

@@ -245,10 +245,9 @@ export default function CheckoutScreen() {
         return;
       }
 
-      const { orderId, keyId: serverKeyId } = orderResponse.data;
       const activeKeyId = (serverKeyId && serverKeyId !== 'YOUR_RAZORPAY_KEY_ID')
         ? serverKeyId
-        : (import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TOTFtxe9irFwr6');
+        : (import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TQIouovGEGboaY');
 
       if (!activeKeyId || activeKeyId === 'YOUR_RAZORPAY_KEY_ID') {
         openDemoPayment(orderId);
@@ -328,7 +327,7 @@ export default function CheckoutScreen() {
         },
       };
 
-      if (orderId && !orderId.startsWith('order_')) {
+      if (orderId) {
         options.order_id = orderId;
       }
 

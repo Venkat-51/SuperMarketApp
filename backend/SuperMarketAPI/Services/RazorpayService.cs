@@ -10,8 +10,13 @@ public class RazorpayService
 
     public RazorpayService(IConfiguration config)
     {
-        _keyId     = config["Razorpay:KeyId"]     ?? string.Empty;
-        _keySecret = config["Razorpay:KeySecret"] ?? string.Empty;
+        var keyId = config["Razorpay:KeyId"];
+        if (string.IsNullOrWhiteSpace(keyId)) keyId = config["RAZORPAY_KEY_ID"] ?? config["VITE_RAZORPAY_KEY_ID"];
+        _keyId = keyId ?? string.Empty;
+
+        var keySecret = config["Razorpay:KeySecret"];
+        if (string.IsNullOrWhiteSpace(keySecret)) keySecret = config["RAZORPAY_KEY_SECRET"];
+        _keySecret = keySecret ?? string.Empty;
     }
 
     /// <summary>
