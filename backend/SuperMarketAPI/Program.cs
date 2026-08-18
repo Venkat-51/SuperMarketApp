@@ -16,8 +16,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<RazorpayService>();
 
-// ── JWT Auth ──────────────────────────────────────────────────────────────────
-var jwtKey = builder.Configuration["Jwt:Key"]!;
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = builder.Configuration["JWT_KEY"];
+if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = "SuperMarketSecretKey2024!XYZ_Replace_This_In_Production";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

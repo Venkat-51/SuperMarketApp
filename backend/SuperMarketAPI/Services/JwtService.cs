@@ -17,7 +17,11 @@ public class JwtService
 
     public string GenerateToken(User user)
     {
-        var key    = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var rawKey = _config["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(rawKey)) rawKey = _config["JWT_KEY"];
+        if (string.IsNullOrWhiteSpace(rawKey)) rawKey = "SuperMarketSecretKey2024!XYZ_Replace_This_In_Production";
+
+        var key    = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(rawKey));
         var creds  = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiry = DateTime.UtcNow.AddHours(double.Parse(_config["Jwt:ExpiryHours"] ?? "24"));
 

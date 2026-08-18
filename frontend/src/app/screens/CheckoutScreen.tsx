@@ -245,6 +245,7 @@ export default function CheckoutScreen() {
         return;
       }
 
+      const { orderId, keyId: serverKeyId } = orderResponse.data;
       const activeKeyId = (serverKeyId && serverKeyId !== 'YOUR_RAZORPAY_KEY_ID')
         ? serverKeyId
         : (import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TQIouovGEGboaY');
