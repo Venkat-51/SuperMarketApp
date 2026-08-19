@@ -57,6 +57,7 @@ export default function AccountScreen() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [profileName, setProfileName] = useState(user.name);
   const [profileEmail, setProfileEmail] = useState(user.email ?? '');
+  const [profilePhone, setProfilePhone] = useState(user.phone ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [ordersCount, setOrdersCount] = useState(0);
@@ -71,6 +72,7 @@ export default function AccountScreen() {
       setUser(result.data);
       setProfileName(result.data.name);
       setProfileEmail(result.data.email ?? '');
+      setProfilePhone(result.data.phone ?? '');
     });
 
     ordersApi.list().then((result) => {
@@ -96,6 +98,7 @@ export default function AccountScreen() {
   const openEditProfile = () => {
     setProfileName(user.name);
     setProfileEmail(user.email ?? '');
+    setProfilePhone(user.phone ?? '');
     setProfileError('');
     setIsEditOpen(true);
   };
@@ -103,6 +106,7 @@ export default function AccountScreen() {
   const saveProfile = async () => {
     const trimmedName = profileName.trim();
     const trimmedEmail = profileEmail.trim();
+    const trimmedPhone = profilePhone.trim();
 
     if (trimmedName.length < 2) {
       setProfileError('Enter a name with at least 2 characters.');
@@ -116,6 +120,7 @@ export default function AccountScreen() {
       const result = await authApi.updateProfile({
         name: trimmedName,
         email: trimmedEmail || undefined,
+        phone: trimmedPhone || undefined,
       });
 
       if (result.error || !result.data) {
@@ -335,6 +340,19 @@ export default function AccountScreen() {
                 value={profileEmail}
                 onChange={(e) => setProfileEmail(e.target.value)}
                 placeholder="name@example.com"
+                className="h-11 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                Mobile Number
+              </label>
+              <Input
+                type="tel"
+                value={profilePhone}
+                onChange={(e) => setProfilePhone(e.target.value)}
+                placeholder="Enter 10-digit mobile number"
                 className="h-11 rounded-xl"
               />
             </div>

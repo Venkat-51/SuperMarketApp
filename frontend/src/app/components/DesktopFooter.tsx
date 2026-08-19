@@ -77,7 +77,7 @@ export default function DesktopFooter() {
           <div className="space-y-2 text-xs text-gray-400">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0" />
-              <span>SuperMarket Tech Park, Indiranagar, Bengaluru 560038</span>
+              <span>SuperMarket, South Street, Thiruvaiyaru, Thanjavur 613 204</span>
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-orange-400 flex-shrink-0" />

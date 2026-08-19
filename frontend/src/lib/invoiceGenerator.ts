@@ -17,6 +17,7 @@ export interface InvoiceData {
   paymentId?: string;
   items: Array<{
     name: string;
+    weight?: string;
     quantity: number;
     price: number;
   }>;
@@ -152,8 +153,9 @@ export function generateInvoicePDF(data: InvoiceData) {
   doc.setTextColor(textColor[0], textColor[1], textColor[2]);
 
   doc.text('ITEM DESCRIPTION', 18, tableStartY + 5.5);
-  doc.text('QTY', 125, tableStartY + 5.5, { align: 'center' });
-  doc.text('PRICE', 155, tableStartY + 5.5, { align: 'right' });
+  doc.text('SIZE / WEIGHT', 95, tableStartY + 5.5);
+  doc.text('QTY', 135, tableStartY + 5.5, { align: 'center' });
+  doc.text('PRICE', 160, tableStartY + 5.5, { align: 'right' });
   doc.text('TOTAL', 190, tableStartY + 5.5, { align: 'right' });
 
   // Table Rows
@@ -164,7 +166,7 @@ export function generateInvoicePDF(data: InvoiceData) {
 
   const safeItems = Array.isArray(data.items) && data.items.length > 0
     ? data.items
-    : [{ name: 'SuperMarket Grocery Order', quantity: 1, price: data.total || 0 }];
+    : [{ name: 'SuperMarket Grocery Order', weight: '1 unit', quantity: 1, price: data.total || 0 }];
 
   safeItems.forEach((item, index) => {
     // Alternate light background for clarity
@@ -177,10 +179,12 @@ export function generateInvoicePDF(data: InvoiceData) {
     const qty = typeof item.quantity === 'number' ? item.quantity : 1;
     const itemTotal = price * qty;
     const itemName = item.name || 'Grocery Item';
+    const itemWeight = item.weight || '1 unit';
 
-    doc.text(itemName.length > 50 ? itemName.substring(0, 48) + '...' : itemName, 18, rowY);
-    doc.text(qty.toString(), 125, rowY, { align: 'center' });
-    doc.text(`Rs. ${price.toFixed(2)}`, 155, rowY, { align: 'right' });
+    doc.text(itemName.length > 36 ? itemName.substring(0, 34) + '...' : itemName, 18, rowY);
+    doc.text(itemWeight, 95, rowY);
+    doc.text(qty.toString(), 135, rowY, { align: 'center' });
+    doc.text(`Rs. ${price.toFixed(2)}`, 160, rowY, { align: 'right' });
     doc.text(`Rs. ${itemTotal.toFixed(2)}`, 190, rowY, { align: 'right' });
 
     rowY += 8;

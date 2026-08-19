@@ -172,6 +172,10 @@ public class AuthController : ControllerBase
 
         user.Name  = req.Name.Trim();
         user.Email = string.IsNullOrWhiteSpace(req.Email) ? user.Email : req.Email.Trim().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(req.Phone))
+        {
+            user.Phone = req.Phone.Trim();
+        }
 
         await _db.SaveChangesAsync();
         return Ok(ToUserDto(user));

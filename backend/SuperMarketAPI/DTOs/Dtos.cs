@@ -20,7 +20,8 @@ public record UserDto(int Id, string Name, string Phone, string? Email, string R
 
 public record UpdateProfileRequest(
     [Required, StringLength(80, MinimumLength = 2)] string Name,
-    [EmailAddress] string? Email
+    [EmailAddress] string? Email,
+    string? Phone
 );
 
 // ── Product ──────────────────────────────────────────────────────────────────

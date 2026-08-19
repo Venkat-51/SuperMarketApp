@@ -73,10 +73,10 @@ export default function OrderSuccessScreen() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '24px 20px',
+        padding: '40px 20px',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+      <div className="w-full max-w-xl mx-auto text-center">
 
         {/* ── Animated success icon ── */}
         <div
@@ -99,40 +99,33 @@ export default function OrderSuccessScreen() {
           }
         `}</style>
 
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111', marginBottom: 8 }}>
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-gray-900 mb-2">
           Order Placed! 🎉
         </h1>
-        <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>
+        <p className="text-sm lg:text-base text-gray-500 mb-1">
           Thank you for shopping with
         </p>
-        <p style={{ fontSize: 15, fontWeight: 700, color: '#FF9933', marginBottom: 24 }}>
+        <p className="text-base lg:text-lg font-bold text-orange-500 mb-6">
           Super Market App
         </p>
 
         {/* ── Order Info Card ── */}
         <div
-          style={{
-            background: '#fff',
-            borderRadius: 20,
-            padding: 20,
-            marginBottom: 16,
-            boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-            textAlign: 'left',
-          }}
+          className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100 text-left"
         >
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
             <div
               style={{
-                width: 40, height: 40, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%',
                 background: '#FFF5EB', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}
             >
-              <Package size={20} color="#FF9933" />
+              <Package size={22} color="#FF9933" />
             </div>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Order ID: #{orderDisplayId}</p>
-              <p style={{ fontSize: 12, color: '#6b7280' }}>
+              <p className="font-bold text-base text-gray-900 mb-0.5">Order ID: #{orderDisplayId}</p>
+              <p className="text-xs lg:text-sm text-gray-500">
                 Delivery: Tomorrow, 10 AM – 2 PM
               </p>
             </div>
@@ -142,7 +135,7 @@ export default function OrderSuccessScreen() {
           <div
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px', borderRadius: 20,
+              padding: '6px 14px', borderRadius: 20,
               background: paymentInfo.bg, color: paymentInfo.color,
               fontWeight: 700, fontSize: 13,
             }}
@@ -156,29 +149,27 @@ export default function OrderSuccessScreen() {
 
           {/* Payment ID for online */}
           {state.paymentId && (
-            <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>
+            <p className="text-xs text-gray-400 mt-2">
               Payment Ref: {state.paymentId}
             </p>
           )}
 
           <div
-            style={{
-              marginTop: 14, padding: '10px 12px', background: '#f9fafb',
-              borderRadius: 10, fontSize: 12, color: '#6b7280',
-            }}
+            className="mt-4 p-3 bg-gray-50 rounded-xl text-xs lg:text-sm text-gray-600 flex items-center gap-2"
           >
-            📩 You will receive order updates via Email
+            <span>📩</span>
+            <span>You will receive order updates & invoice via Email</span>
           </div>
         </div>
 
         {/* ── Action Buttons ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* Prompt for first-time name entry */}
           {showNamePrompt && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.06)', marginBottom: 6 }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Save your name for faster checkout</p>
-              <p style={{ margin: '6px 0 10px', color: '#6b7280', fontSize: 13 }}>Enter your name to personalise your orders and receipts.</p>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <div className="w-full bg-white rounded-xl p-3 shadow-sm border border-gray-100 mb-2">
+              <p className="m-0 font-bold text-sm text-gray-900">Save your name for faster checkout</p>
+              <p className="my-1.5 text-xs text-gray-500">Enter your name to personalise your orders and receipts.</p>
+              <div className="flex gap-2">
                 <Input value={name} onChange={(e) => setName((e.target as HTMLInputElement).value)} placeholder="Your name" />
                 <Button
                   onClick={async () => {
@@ -199,13 +190,7 @@ export default function OrderSuccessScreen() {
           )}
           <Button
             onClick={() => navigate('/home')}
-            style={{
-              width: '100%', height: 50, borderRadius: 14,
-              fontWeight: 800, fontSize: 15,
-              background: 'linear-gradient(135deg, #FF9933 0%, #ff7700 100%)',
-              border: 'none', color: '#fff',
-              boxShadow: '0 4px 14px rgba(255,153,51,0.4)',
-            }}
+            className="flex-1 h-12 rounded-xl font-extrabold text-sm lg:text-base text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md transition-all"
           >
             Continue Shopping
           </Button>
@@ -223,6 +208,7 @@ export default function OrderSuccessScreen() {
                   paymentId: order.paymentId || state.paymentId,
                   items: order.items.map(i => ({
                     name: i.productName,
+                    weight: i.weight || '1 unit',
                     quantity: i.quantity,
                     price: i.price
                   })),
@@ -248,23 +234,18 @@ export default function OrderSuccessScreen() {
               }
             }}
             variant="outline"
-            style={{
-              width: '100%', height: 48, borderRadius: 14,
-              fontWeight: 700, fontSize: 14,
-              border: '2px solid #FF9933', color: '#FF9933',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-            }}
+            className="flex-1 h-12 rounded-xl font-bold text-sm lg:text-base border-2 border-orange-500 text-orange-500 hover:bg-orange-50 flex items-center justify-center gap-2 transition-all"
           >
             <Download size={18} />
             Download Invoice PDF
           </Button>
+        </div>
+
+        <div className="mt-3">
           <Button
             onClick={() => navigate('/orders')}
             variant="ghost"
-            style={{
-              width: '100%', height: 44, borderRadius: 14,
-              fontWeight: 700, fontSize: 14, color: '#4b5563',
-            }}
+            className="w-full h-11 rounded-xl font-bold text-sm text-gray-600 hover:text-gray-900"
           >
             View Order History
           </Button>

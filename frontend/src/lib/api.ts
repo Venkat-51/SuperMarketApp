@@ -174,7 +174,7 @@ export const authApi = {
 
   me: () => apiFetch<ApiUser>('/auth/me'),
 
-  updateProfile: (payload: { name: string; email?: string }) =>
+  updateProfile: (payload: { name: string; email?: string; phone?: string }) =>
     apiFetch<ApiUser>('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),
 
   logout: () => { tokenStore.clear(); },

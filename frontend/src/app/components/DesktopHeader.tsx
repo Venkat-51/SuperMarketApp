@@ -15,7 +15,7 @@ export default function DesktopHeader() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState('Indiranagar, Bengaluru - 560038');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [isLocationOpen, setIsLocationOpen] = useState(false);
 
   const cartDropdownRef = useRef<HTMLDivElement>(null);

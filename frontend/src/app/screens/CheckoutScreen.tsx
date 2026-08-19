@@ -140,6 +140,9 @@ export default function CheckoutScreen() {
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
   const [savedName, setSavedName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [savedPhone, setSavedPhone] = useState('');
 
   const deliveryFee = getCartTotal() >= 299 ? 0 : 40;
   const grandTotal = getCartTotal() + deliveryFee;
@@ -157,35 +160,50 @@ export default function CheckoutScreen() {
 
   const validateAndPersistName = useCallback(async () => {
     const trimmedName = normalizeNameValue(name);
+    const trimmedPhone = phone.trim();
 
+    let hasError = false;
     if (!trimmedName) {
       setNameError('Please enter your name');
-      return false;
+      hasError = true;
+    } else {
+      setNameError('');
     }
 
-    setNameError('');
+    if (!trimmedPhone) {
+      setPhoneError('Please enter your phone number');
+      hasError = true;
+    } else if (trimmedPhone.length < 10) {
+      setPhoneError('Enter a valid 10-digit mobile number');
+      hasError = true;
+    } else {
+      setPhoneError('');
+    }
+
+    if (hasError) return false;
 
     if (!tokenStore.get()) {
       navigate('/login', { state: { from: '/checkout' } });
       return false;
     }
 
-    if (trimmedName !== savedName) {
-      const result = await authApi.updateProfile({ name: trimmedName });
+    if (trimmedName !== savedName || trimmedPhone !== savedPhone) {
+      const result = await authApi.updateProfile({ name: trimmedName, phone: trimmedPhone });
       if (result.error || !result.data) {
         if (result.error?.includes('log in') || result.error?.includes('401')) {
           navigate('/login', { state: { from: '/checkout' } });
           return false;
         }
-        setErrorMsg(result.error ?? 'Unable to save your name.');
+        setErrorMsg(result.error ?? 'Unable to save your details.');
         return false;
       }
 
       setSavedName(result.data.name);
+      setSavedPhone(result.data.phone);
     }
 
     return true;
-  }, [name, navigate, savedName]);
+  }, [name, phone, navigate, savedName, savedPhone]);
 
   // ── Handle COD ──────────────────────────────────────────────────────────────
   const handleCOD = useCallback(async () => {
@@ -430,6 +448,7 @@ export default function CheckoutScreen() {
       const res = await authApi.me();
       if (!res.error && res.data) {
         const currentName = normalizeNameValue(res.data.name);
+        const currentPhone = res.data.phone || '';
 
         if (!currentName) {
           setName('');
@@ -437,6 +456,9 @@ export default function CheckoutScreen() {
           setName(currentName);
           setSavedName(currentName);
         }
+
+        setPhone(currentPhone);
+        setSavedPhone(currentPhone);
       }
     })();
   }, []);
@@ -540,49 +562,92 @@ export default function CheckoutScreen() {
           </div>
         )}
 
-        {/* ── Name Section ── */}
+        {/* ── Contact Details Section ── */}
         <section style={{ marginBottom: 16 }}>
-          <h3 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Name <span style={{ color: '#ef4444' }}>*</span></h3>
-          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280' }}>Your name is required before you can place the order.</p>
+          <h3 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Personal Details <span style={{ color: '#ef4444' }}>*</span></h3>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#6b7280' }}>Your name and phone number are required for order updates and invoices.</p>
           <Card style={{ borderRadius: 16, border: '1px solid #f0f0f0', padding: 16, background: '#fff' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 40, height: 40, borderRadius: '50%',
-                  background: '#FFF5EB', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}
-              >
-                <User size={20} color="#FF9933" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Input
-                  value={name}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    if (nameError) setNameError('');
-                  }}
-                  placeholder="Enter your name"
-                  aria-required="true"
-                  aria-invalid={Boolean(nameError)}
-                  className="h-11 rounded-lg"
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Name Input */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
                   style={{
-                    width: '100%',
-                    fontSize: 14,
-                    background: name.trim() ? '#fff' : '#f3f4f6',
-                    borderColor: nameError ? '#ef4444' : '#e5e7eb',
-                    boxShadow: nameError ? '0 0 0 1px #ef4444' : 'none',
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: '#FFF5EB', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}
-                />
-                {nameError ? (
-                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
-                    {nameError}
-                  </p>
-                ) : (
-                  <p style={{ margin: '8px 0 0', fontSize: 12, color: '#9ca3af' }}>
-                    Required field
-                  </p>
-                )}
+                >
+                  <User size={20} color="#FF9933" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>
+                    Full Name <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <Input
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      if (nameError) setNameError('');
+                    }}
+                    placeholder="Enter your full name"
+                    aria-required="true"
+                    aria-invalid={Boolean(nameError)}
+                    className="h-11 rounded-lg"
+                    style={{
+                      width: '100%',
+                      fontSize: 14,
+                      background: name.trim() ? '#fff' : '#f3f4f6',
+                      borderColor: nameError ? '#ef4444' : '#e5e7eb',
+                      boxShadow: nameError ? '0 0 0 1px #ef4444' : 'none',
+                    }}
+                  />
+                  {nameError && (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                      {nameError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Phone Input */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: '#FFF5EB', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}
+                >
+                  <Smartphone size={20} color="#FF9933" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>
+                    Mobile Number <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <Input
+                    value={phone}
+                    onChange={(event) => {
+                      setPhone(event.target.value);
+                      if (phoneError) setPhoneError('');
+                    }}
+                    placeholder="Enter 10-digit phone number"
+                    aria-required="true"
+                    aria-invalid={Boolean(phoneError)}
+                    className="h-11 rounded-lg"
+                    style={{
+                      width: '100%',
+                      fontSize: 14,
+                      background: phone.trim() ? '#fff' : '#f3f4f6',
+                      borderColor: phoneError ? '#ef4444' : '#e5e7eb',
+                      boxShadow: phoneError ? '0 0 0 1px #ef4444' : 'none',
+                    }}
+                  />
+                  {phoneError && (
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
+                      {phoneError}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </Card>

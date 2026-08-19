@@ -8,6 +8,21 @@ using SuperMarketAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Load Environment Variables from .env file if exists ─────────────────────
+var envFilePath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envFilePath))
+{
+    foreach (var line in File.ReadAllLines(envFilePath))
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+        var parts = line.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
+        }
+    }
+}
+
 // ── Database ─────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -15,6 +30,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<RazorpayService>();
+builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<PdfInvoiceService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = builder.Configuration["JWT_KEY"];

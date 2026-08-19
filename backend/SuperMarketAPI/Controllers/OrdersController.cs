@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SuperMarketAPI.Data;
 using SuperMarketAPI.DTOs;
 using SuperMarketAPI.Models;
+using SuperMarketAPI.Services;
 
 namespace SuperMarketAPI.Controllers;
 
@@ -13,8 +14,19 @@ namespace SuperMarketAPI.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly EmailService _emailService;
+    private readonly PdfInvoiceService _pdfService;
+    private readonly ILogger<OrdersController> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public OrdersController(AppDbContext db) => _db = db;
+    public OrdersController(AppDbContext db, EmailService emailService, PdfInvoiceService pdfService, ILogger<OrdersController> logger, IServiceScopeFactory scopeFactory)
+    {
+        _db = db;
+        _emailService = emailService;
+        _pdfService = pdfService;
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+    }
 
     /// <summary>POST /api/orders — Place a new order</summary>
     [HttpPost]
@@ -101,6 +113,58 @@ public class OrdersController : ControllerBase
         _db.CartItems.RemoveRange(cartItems);
 
         await _db.SaveChangesAsync();
+
+        // Send Invoice PDF to customer and owner asynchronously via Gmail
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var fullOrder = await scopedDb.Orders
+                    .Include(o => o.Items)
+                    .Include(o => o.Address)
+                    .FirstOrDefaultAsync(o => o.Id == order.Id);
+
+                var customer = await scopedDb.Users.FindAsync(userId.Value);
+
+                if (fullOrder != null && customer != null)
+                {
+                    var pdfBytes = _pdfService.GenerateInvoicePdf(fullOrder, customer);
+                    var customerEmail = customer.Email ?? "";
+                    var subject = $"Order Confirmed! Invoice #{fullOrder.Id} - Super Market App";
+                    var bodyHtml = $"""
+                        <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                          <h2 style="color: #FF9933; margin-top: 0;">Order Confirmation & Invoice</h2>
+                          <p>Hi <strong>{(string.IsNullOrWhiteSpace(customer.Name) ? "Customer" : customer.Name)}</strong>,</p>
+                          <p>Thank you for shopping with <strong>Super Market App</strong>! Your order <strong>#{fullOrder.Id}</strong> has been successfully placed.</p>
+                          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                            <p style="margin: 5px 0;"><strong>Order ID:</strong> #{fullOrder.Id}</p>
+                            <p style="margin: 5px 0;"><strong>Total Amount:</strong> ₹{fullOrder.Total:F2}</p>
+                            <p style="margin: 5px 0;"><strong>Payment Method:</strong> {fullOrder.PaymentMethod}</p>
+                            <p style="margin: 5px 0;"><strong>Status:</strong> {fullOrder.Status}</p>
+                          </div>
+                          <p>Please find attached your official PDF invoice for this order.</p>
+                          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                          <p style="font-size: 12px; color: #777;">Super Market App Team</p>
+                        </div>
+                    """;
+
+                    await _emailService.SendOrderInvoiceEmailAsync(
+                        customerEmail,
+                        subject,
+                        bodyHtml,
+                        pdfBytes,
+                        $"Invoice_Order_{fullOrder.Id}.pdf"
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send order invoice email for Order #{OrderId}", order.Id);
+            }
+        });
 
         return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, await BuildOrderDto(order.Id));
     }
