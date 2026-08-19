@@ -14,6 +14,10 @@ backend/**/obj/
 *.user
 *.userosv
 *.suo
+*.db
+*.db-shm
+*.db-wal
+**/supermarket.db
 
 # Environment & Credentials
 .env*

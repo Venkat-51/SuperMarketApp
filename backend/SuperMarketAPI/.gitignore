@@ -1,3 +1,5 @@
 credentials.json
 /bin
 .env
+.env.*
+!.env.example

@@ -21,13 +21,12 @@ public class EmailService
 
     private (string Host, int Port, string FromAddress, string FromName, string Password, string? OwnerEmail) GetSmtpConfig()
     {
-        // Check environment variables first (e.g. BREVO_API_KEY / SMTP_*), fallback to appsettings.json
-        var brevoApiKey = _config["BREVO_API_KEY"] ?? Environment.GetEnvironmentVariable("BREVO_API_KEY");
+        // Check environment variables first (e.g. SMTP_* / AppPassword), fallback to appsettings.json
         var senderEmail = _config["SENDER_EMAIL"] ?? Environment.GetEnvironmentVariable("SENDER_EMAIL");
         var senderName  = _config["SENDER_NAME"]  ?? Environment.GetEnvironmentVariable("SENDER_NAME");
 
         var smtpHost    = _config["SMTP_HOST"]     ?? Environment.GetEnvironmentVariable("SMTP_HOST")
-                          ?? _config["Email:SmtpHost"] ?? "smtp-relay.brevo.com";
+                          ?? _config["Email:SmtpHost"] ?? "smtp.gmail.com";
 
         var smtpPortStr = _config["SMTP_PORT"]     ?? Environment.GetEnvironmentVariable("SMTP_PORT")
                           ?? _config["Email:SmtpPort"] ?? "587";
@@ -39,10 +38,9 @@ public class EmailService
         var fromName    = !string.IsNullOrWhiteSpace(senderName) ? senderName
                           : (_config["Email:FromName"] ?? "SuperMarketApp");
 
-        // Prefer Brevo API Key if provided for Brevo SMTP relay, otherwise fallback to SMTP_PASSWORD / AppPassword
-        var rawPassword = !string.IsNullOrWhiteSpace(brevoApiKey) ? brevoApiKey
-                          : (_config["SMTP_PASSWORD"] ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
-                          ?? _config["Email:AppPassword"] ?? "");
+        var rawPassword = _config["SMTP_PASSWORD"] ?? Environment.GetEnvironmentVariable("SMTP_PASSWORD")
+                          ?? _config["Email:AppPassword"]
+                          ?? _config["BREVO_API_KEY"] ?? Environment.GetEnvironmentVariable("BREVO_API_KEY") ?? "";
 
         var password    = rawPassword.Replace(" ", "").Trim();
 
