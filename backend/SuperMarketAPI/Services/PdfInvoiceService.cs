@@ -47,7 +47,21 @@ public class PdfInvoiceService
         sb.AppendLine($"BT /F2 9 Tf 0.12 0.16 0.21 rg 40 720 Td ({EscapePdf(customerName)}) Tj ET");
         sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 40 707 Td (Phone: {EscapePdf(customerPhone)}) Tj ET");
         sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 40 694 Td (Email: {EscapePdf(customerEmail)}) Tj ET");
-        sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 40 681 Td (Address: {EscapePdf(addressStr)}) Tj ET");
+
+        if (order.Address != null)
+        {
+            var line1 = EscapePdf(order.Address.Line1);
+            var city = EscapePdf(order.Address.City);
+            var statePin = EscapePdf($"{order.Address.State} - {order.Address.Pincode}");
+
+            sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 40 681 Td (Address: {line1}) Tj ET");
+            sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 79 668 Td ({city}) Tj ET");
+            sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 79 655 Td ({statePin}) Tj ET");
+        }
+        else
+        {
+            sb.AppendLine("BT /F1 9 Tf 0.29 0.33 0.38 rg 40 681 Td (Address: Standard Delivery Address) Tj ET");
+        }
 
         // Payment Info Block (Right Side)
         sb.AppendLine("BT /F2 10 Tf 0.12 0.16 0.21 rg 340 735 Td (PAYMENT INFORMATION:) Tj ET");
@@ -56,13 +70,13 @@ public class PdfInvoiceService
         sb.AppendLine($"BT /F1 9 Tf 0.29 0.33 0.38 rg 340 694 Td (Payment Status: {paymentStatusStr}) Tj ET");
 
         // Table Header
-        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 40 640 Td (ITEM DESCRIPTION) Tj ET");
-        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 250 640 Td (PACK WEIGHT / SIZE) Tj ET");
-        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 380 640 Td (QTY) Tj ET");
-        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 430 640 Td (PRICE) Tj ET");
-        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 500 640 Td (TOTAL) Tj ET");
+        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 40 625 Td (ITEM DESCRIPTION) Tj ET");
+        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 250 625 Td (PACK WEIGHT / SIZE) Tj ET");
+        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 380 625 Td (QTY) Tj ET");
+        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 430 625 Td (PRICE) Tj ET");
+        sb.AppendLine("BT /F2 9 Tf 0.12 0.16 0.21 rg 500 625 Td (TOTAL) Tj ET");
 
-        int currentY = 620;
+        int currentY = 605;
         foreach (var item in order.Items)
         {
             var name = item.ProductName.Length > 28 ? item.ProductName.Substring(0, 25) + "..." : item.ProductName;
