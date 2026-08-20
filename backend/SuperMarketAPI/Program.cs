@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -53,6 +54,9 @@ else
 }
 
 // ── Services ──────────────────────────────────────────────────────────────────
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(Path.GetTempPath(), "DataProtection-Keys")));
+
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<RazorpayService>();
 builder.Services.AddSingleton<EmailService>();
@@ -157,6 +161,15 @@ app.MapGet("/", () => new
     docs   = "/swagger",
     time   = DateTime.UtcNow
 });
+
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+{
+    Console.WriteLine($"--> Binding to custom PORT: {port}");
+    app.Urls.Add($"http://0.0.0.0:{port}");
+}
 
 app.Run();
 
