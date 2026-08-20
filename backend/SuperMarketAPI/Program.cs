@@ -22,10 +22,35 @@ if (File.Exists(envFilePath))
         }
     }
 }
+builder.Configuration.AddEnvironmentVariables();
 
 // ── Database ─────────────────────────────────────────────────────────────────
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+var useSqliteEnv = Environment.GetEnvironmentVariable("USE_SQLITE");
+bool useSqlite = string.Equals(useSqliteEnv, "true", StringComparison.OrdinalIgnoreCase);
+
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var defaultConnStr = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (!useSqlite && !string.IsNullOrWhiteSpace(databaseUrl))
+{
+    var pgConnStr = ConvertPostgresUrlToConnectionString(databaseUrl);
+    Console.WriteLine("--> Using Neon PostgreSQL Database.");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(pgConnStr));
+}
+else if (!string.IsNullOrWhiteSpace(defaultConnStr) && (defaultConnStr.StartsWith("Host=") || defaultConnStr.StartsWith("Server=") || defaultConnStr.StartsWith("postgres")))
+{
+    var pgConnStr = ConvertPostgresUrlToConnectionString(defaultConnStr);
+    Console.WriteLine("--> Using PostgreSQL Database.");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(pgConnStr));
+}
+else
+{
+    Console.WriteLine("--> Using SQLite Database.");
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(defaultConnStr ?? "Data Source=supermarket.db"));
+}
 
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddSingleton<JwtService>();
@@ -35,7 +60,11 @@ builder.Services.AddSingleton<PdfInvoiceService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = builder.Configuration["JWT_KEY"];
-if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = "SuperMarketSecretKey2024!XYZ_Replace_This_In_Production";
+if (string.IsNullOrWhiteSpace(jwtKey)) jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("JWT_KEY is missing from configuration or environment. Please configure JWT_KEY in environment variables or appsettings.json.");
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -130,3 +159,29 @@ app.MapGet("/", () => new
 });
 
 app.Run();
+
+static string ConvertPostgresUrlToConnectionString(string rawUrl)
+{
+    if (string.IsNullOrWhiteSpace(rawUrl)) return rawUrl;
+    if (!rawUrl.StartsWith("postgres://") && !rawUrl.StartsWith("postgresql://")) return rawUrl;
+
+    try
+    {
+        var uri = new Uri(rawUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+        var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
+
+        // Build Npgsql connection string
+        var builder = new StringBuilder();
+        builder.Append($"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true;");
+        return builder.ToString();
+    }
+    catch
+    {
+        return rawUrl;
+    }
+}

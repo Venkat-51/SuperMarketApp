@@ -69,19 +69,20 @@ public class RazorpayService
     /// </summary>
     public bool VerifySignature(string razorpayOrderId, string razorpayPaymentId, string signature)
     {
-        if (string.IsNullOrEmpty(_keySecret) || string.IsNullOrEmpty(signature)) return true;
+        if (string.IsNullOrWhiteSpace(_keySecret) || string.IsNullOrWhiteSpace(signature)) 
+            return false;
 
         try
         {
             var payload = $"{razorpayOrderId}|{razorpayPaymentId}";
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_keySecret));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-            var expected = BitConverter.ToString(hash).Replace("-", "").ToLower();
-            return expected == signature.ToLower() || signature == "test_signature";
+            var expected = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            return string.Equals(expected, signature.Trim(), StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
-            return true;
+            return false;
         }
     }
 
