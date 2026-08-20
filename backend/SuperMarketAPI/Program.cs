@@ -118,7 +118,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme       = "bearer",
         BearerFormat = "JWT",
         In           = ParameterLocation.Header,
-        Description  = "Enter your JWT token (from /api/auth/verify-otp)",
+        Description  = "Enter your JWT token (from /api/auth/login or /api/auth/register)",
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {

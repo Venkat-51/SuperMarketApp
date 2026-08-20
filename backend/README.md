@@ -1,68 +1,105 @@
+# ⚙️ SuperMarket App — Backend API
 
-SuperMarket APP — Backend API
-==============================
+An enterprise-ready **ASP.NET Core 8 Web API** powering the SuperMarket application with Entity Framework Core, SQLite / PostgreSQL, JWT Authentication (Email/Password & Google OAuth), and Razorpay Payment Gateway integration.
 
-Technology: ASP.NET Core 8 Web API + Entity Framework Core + SQLite
+---
 
-## Quick Start
+## 🛠️ Tech Stack & Prerequisites
 
-### Prerequisites
-- .NET 8 SDK
+- **Framework**: .NET 8 SDK (ASP.NET Core Web API)
+- **Database**: SQLite (`supermarket.db`) / PostgreSQL (Neon)
+- **ORM**: Entity Framework Core 8
+- **Authentication**: JWT Bearer Authentication (Email/Password & Google OAuth)
+- **Payments**: Razorpay .NET SDK
+- **API Documentation**: OpenAPI / Swagger UI
 
-### Run the backend
+---
+
+## ⚡ Quick Start
+
+### 1. Prerequisites
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- EF Core CLI Tools: `dotnet tool install --global dotnet-ef`
+
+### 2. Run Database Migrations & Start Server
 ```powershell
-cd "backend\SuperMarketAPI"
+cd SuperMarketAPI
 dotnet restore
-dotnet ef migrations add InitialCreate
 dotnet ef database update
 dotnet run
 ```
 
-The API starts at: http://localhost:5000
-Swagger UI at:    http://localhost:5000/swagger
+- **Base URL**: `http://localhost:5000`
+- **Swagger Documentation UI**: `http://localhost:5000/swagger`
 
-### Environment
-Edit `appsettings.json` to configure:
-- `Jwt:Key`              — Change this in production!
-- `Razorpay:KeyId`       — Your Razorpay key_id
-- `Razorpay:KeySecret`   — Your Razorpay key_secret
-- `Cors:AllowedOrigins`  — Frontend URLs
+---
 
-## API Summary
+## ⚙️ Configuration (`appsettings.json`)
 
-| Route                           | Auth | Description                      |
-|---------------------------------|------|----------------------------------|
-| POST /api/auth/send-otp         | No   | Get OTP (returns otp in dev)     |
-| POST /api/auth/verify-otp       | No   | Verify OTP → JWT token           |
-| GET  /api/auth/me               | Yes  | Current user                     |
-| GET  /api/products              | No   | List products (filter + search)  |
-| GET  /api/products/{id}         | No   | Product detail                   |
-| GET  /api/categories            | No   | All categories                   |
-| POST /api/orders                | Yes  | Place order                      |
-| GET  /api/orders                | Yes  | My order history                 |
-| GET  /api/orders/{id}           | Yes  | Order detail                     |
-| POST /api/payments/create-order | Yes  | Create Razorpay order            |
-| POST /api/payments/verify       | Yes  | Verify Razorpay signature        |
-| GET  /api/cart                  | Yes  | Get saved cart                   |
-| POST /api/cart/sync             | Yes  | Sync cart from frontend          |
-| GET  /api/addresses             | Yes  | My addresses                     |
-| POST /api/addresses             | Yes  | Add address                      |
-| POST /api/coupons/validate      | No   | Validate coupon code             |
-| GET  /api/wishlist              | Yes  | Get wishlist                     |
-| POST /api/wishlist/{id}         | Yes  | Add to wishlist                  |
+Configure parameters in `appsettings.json` or system environment variables:
 
-## Demo Credentials
-- Phone: any 10-digit number
-- OTP:   123456 (fixed in dev mode)
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=supermarket.db"
+  },
+  "Jwt": {
+    "Key": "SuperMarketAppSecretKeyForJWTAuth2026!",
+    "Issuer": "SuperMarketAPI",
+    "Audience": "SuperMarketApp"
+  },
+  "Razorpay": {
+    "KeyId": "rzp_test_YOUR_KEY_ID",
+    "KeySecret": "YOUR_KEY_SECRET"
+  },
+  "Cors": {
+    "AllowedOrigins": ["http://localhost:5173", "http://localhost:3000"]
+  }
+}
+```
 
-## Sample Coupons
-| Code     | Discount            | Min Order |
-|----------|---------------------|-----------|
-| SAVE50   | ₹50 flat            | ₹299      |
-| FLAT100  | ₹100 flat           | ₹599      |
-| FIRST20  | 20% (max ₹150)      | ₹199      |
-| SAISALE  | 15% (max ₹200)      | ₹499      |
+---
 
-## Frontend API Client
-Located at: frontend/src/lib/api.ts
-Provides typed wrappers for every endpoint.
+## 📡 API Endpoint Reference
+
+| Controller | Method | Endpoint | Auth Required | Description |
+| --- | --- | --- | --- | --- |
+| **Auth** | `POST` | `/api/auth/register` | ❌ No | Register new user with Email, Password & Name |
+| **Auth** | `POST` | `/api/auth/login` | ❌ No | Authenticate user with Email & Password → JWT token |
+| **Auth** | `POST` | `/api/auth/google` | ❌ No | Authenticate user with Google ID token → JWT token |
+| **Auth** | `GET` | `/api/auth/me` | ✅ Yes | Get authenticated user profile |
+| **Auth** | `PATCH`| `/api/auth/me` | ✅ Yes | Update user profile details |
+| **Products** | `GET` | `/api/products` | ❌ No | Get product list with search/filter/sort |
+| **Products** | `GET` | `/api/products/{id}` | ❌ No | Get single product by ID |
+| **Categories**| `GET` | `/api/categories` | ❌ No | Get all product categories |
+| **Cart** | `GET` | `/api/cart` | ✅ Yes | Fetch user's persistent cart |
+| **Cart** | `POST` | `/api/cart/sync` | ✅ Yes | Synchronize cart items from client |
+| **Addresses** | `GET` | `/api/addresses` | ✅ Yes | List saved delivery addresses |
+| **Addresses** | `POST` | `/api/addresses` | ✅ Yes | Save new delivery address |
+| **Orders** | `POST` | `/api/orders` | ✅ Yes | Place a new grocery order |
+| **Orders** | `GET` | `/api/orders` | ✅ Yes | Get order history for user |
+| **Orders** | `GET` | `/api/orders/{id}` | ✅ Yes | Get order details by ID |
+| **Payments** | `POST` | `/api/payments/create-order`| ✅ Yes | Create Razorpay order ID |
+| **Payments** | `POST` | `/api/payments/verify` | ✅ Yes | Verify Razorpay payment signature |
+| **Coupons** | `POST` | `/api/coupons/validate` | ❌ No | Validate coupon code & calculate discount |
+| **Wishlist** | `GET` | `/api/wishlist` | ✅ Yes | Get saved wishlist items |
+| **Wishlist** | `POST` | `/api/wishlist/{id}` | ✅ Yes | Toggle item in user's wishlist |
+
+---
+
+## 🧪 Testing Credentials & Authentication
+
+- **Demo Customer**: `user@example.com` / `password123`
+- **Demo Admin**: `admin@example.com` / `admin123`
+- **Google Sign-In**: Send Google ID Token payload to `/api/auth/google`
+
+---
+
+## 🐳 Docker Support
+
+To build and run the backend container standalone:
+
+```bash
+docker build -t supermarket-backend .
+docker run -p 5000:8080 supermarket-backend
+```
