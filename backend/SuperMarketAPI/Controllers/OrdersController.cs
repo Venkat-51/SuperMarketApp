@@ -44,6 +44,8 @@ public class OrdersController : ControllerBase
 
         decimal itemTotal = validItems.Sum(i =>
         {
+            if (i.Price.HasValue && i.Price.Value > 0)
+                return i.Price.Value * i.Quantity;
             if (productDict.TryGetValue(i.ProductId, out var p))
                 return p.Price * i.Quantity;
             return 30m * i.Quantity;
@@ -82,25 +84,34 @@ public class OrdersController : ControllerBase
             {
                 if (productDict.TryGetValue(i.ProductId, out var p))
                 {
+                    var resolvedWeight = !string.IsNullOrWhiteSpace(i.Weight) ? i.Weight
+                                       : (!string.IsNullOrWhiteSpace(p.Weight) ? p.Weight
+                                       : (!string.IsNullOrWhiteSpace(p.Unit) ? p.Unit : "1 unit"));
+                    var resolvedPrice  = (i.Price.HasValue && i.Price.Value > 0) ? i.Price.Value : p.Price;
+
                     return new OrderItem
                     {
                         ProductId    = p.Id,
                         ProductName  = p.Name,
                         ProductImage = p.ImageUrl,
-                        Price        = p.Price,
-                        Mrp          = p.Mrp,
-                        Weight       = p.Weight,
+                        Price        = resolvedPrice,
+                        Mrp          = p.Mrp > 0 ? p.Mrp : resolvedPrice,
+                        Weight       = resolvedWeight,
                         Quantity     = i.Quantity,
                     };
                 }
+
+                var fallbackWeight = !string.IsNullOrWhiteSpace(i.Weight) ? i.Weight : "1 unit";
+                var fallbackPrice  = (i.Price.HasValue && i.Price.Value > 0) ? i.Price.Value : 30m;
+
                 return new OrderItem
                 {
                     ProductId    = i.ProductId,
                     ProductName  = $"Grocery Product #{i.ProductId}",
                     ProductImage = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&q=80",
-                    Price        = 30,
-                    Mrp          = 35,
-                    Weight       = "1 unit",
+                    Price        = fallbackPrice,
+                    Mrp          = fallbackPrice,
+                    Weight       = fallbackWeight,
                     Quantity     = i.Quantity,
                 };
             }).ToList(),

@@ -218,7 +218,7 @@ export default function CheckoutScreen() {
       const payload = {
         items: cartItems
           .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
-          .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+          .map(i => ({ productId: Number(i.id), quantity: i.quantity, weight: i.weight, price: i.price })),
         addressId: selectedAddress?.id,
         paymentMethod: 'cod' as const,
       };
@@ -308,7 +308,7 @@ export default function CheckoutScreen() {
             const payload = {
               items: cartItems
                 .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
-                .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+                .map(i => ({ productId: Number(i.id), quantity: i.quantity, weight: i.weight, price: i.price })),
               addressId: selectedAddress?.id,
               paymentMethod: 'online' as const,
               paymentId: finalPaymentId,
@@ -371,7 +371,7 @@ export default function CheckoutScreen() {
       const payload = {
         items: cartItems
           .filter(i => !isNaN(Number(i.id)) && Number(i.id) > 0)
-          .map(i => ({ productId: Number(i.id), quantity: i.quantity })),
+          .map(i => ({ productId: Number(i.id), quantity: i.quantity, weight: i.weight, price: i.price })),
         addressId: selectedAddress?.id,
         paymentMethod: 'online' as const,
         paymentId,

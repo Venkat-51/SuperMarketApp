@@ -80,7 +80,20 @@ public class PdfInvoiceService
         foreach (var item in order.Items)
         {
             var name = item.ProductName.Length > 28 ? item.ProductName.Substring(0, 25) + "..." : item.ProductName;
-            var weightStr = string.IsNullOrWhiteSpace(item.Weight) ? "1 unit" : item.Weight;
+            var weightStr = item.Weight;
+            if (string.IsNullOrWhiteSpace(weightStr) || weightStr.Equals("1 unit", StringComparison.OrdinalIgnoreCase))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(item.ProductName, @"\b(\d+(\.\d+)?\s*(kg|g|l|ml|pack|pcs|units))\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    weightStr = match.Value;
+                }
+                else
+                {
+                    weightStr = string.IsNullOrWhiteSpace(item.Weight) ? "1 unit" : item.Weight;
+                }
+            }
+
             if (weightStr.Length > 20) weightStr = weightStr.Substring(0, 18) + "..";
             var lineTotal = item.Price * item.Quantity;
 

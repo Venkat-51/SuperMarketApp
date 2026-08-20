@@ -198,7 +198,7 @@ export const productsApi = {
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const ordersApi = {
   place: (payload: {
-    items: { productId: number; quantity: number }[];
+    items: { productId: number; quantity: number; weight?: string; price?: number }[];
     addressId?: number;
     paymentMethod: string;
     paymentId?: string;

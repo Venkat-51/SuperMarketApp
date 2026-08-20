@@ -154,7 +154,7 @@ public record PlaceOrderRequest(
     string? CouponCode
 );
 
-public record OrderItemRequest(int ProductId, int Quantity);
+public record OrderItemRequest(int ProductId, int Quantity, string? Weight = null, decimal? Price = null);
 
 public record OrderDto(
     int Id,
